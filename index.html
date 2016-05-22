@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Password App</title>
+    <link rel="stylesheet" href="./inc/css/bootstrap.css">
+    <link rel="stylesheet" href="./inc/css/bootstrap-theme.css">
+  </head>
+  <body>
+    <div class="container">
+      <h2>Password App</h2>
+      <p>Here you can manage your passwords</p>
+      <button type="button" class="btn btn-primary btn" data-toggle="modal" data-target="#myModal">
+        Add password
+      </button>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>User/Email</th>
+            <th>Password</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody> 
+      </table>
+    </div>
+  </body>
+  
+  <script> 
+    window.$ = window.jQuery = require('./inc/js/jquery.js');
+    const {ipcRenderer} = require('electron');
+    const notifier = require('node-notifier');
+    const path = require('path');
+    require('./inc/js/bootstrap.js');
+    require('./pubsub.js');
+  </script> 
+    
+  <script> 
+    const Clipboard = require('clipboard');
+    ipcRenderer.send('populateTable');
+    
+    ipcRenderer.on('passtable', (event, results) => {
+    console.log(results);
+      var $table = $('table');
+      var table = $("table tbody");
+      var i = 0;
+      $.each(results, function(idx, elem){
+          i++; 
+          table.append("<tr>");
+          table.append("<td>"+elem.service+"</td>");
+          table.append("<td><span id='email_"+i+"'>"+elem.email+"</span> <button class='copyBtn' data-clipboard-target='#email_"+i+"'><img src='./inc/img/copy.png' alt='Copy to clipboard'></button</td>");
+          table.append("<td><span id='pass_"+i+"'>"+elem.password+"</span> <button class='copyBtn' data-clipboard-target='#pass_"+i+"'><img src='./inc/img/copy.png' alt='Copy to clipboard'></button></td>");
+          table.append("<td><button class='delBtn' dataid='"+elem.key+"'><img src='./inc/img/delete.png' alt='Delete password ("+elem.key+")'></button></td>");
+          table.append("</tr>");
+      });
+    });
+     
+    $(function(){
+      $('.add').click(function(){
+        addService();
+      })
+      
+      $('#inputService').keypress(function (e) {
+        if (e.which == 13) addService();
+      });
+      
+      $('#inputPassword').keypress(function (e) {
+        if (e.which == 13) addService();
+      });
+      
+      new Clipboard('.copyBtn');
+    });
+    
+    function addService(){
+      $('#inputService').attr('disabled','disabled');
+      $('#inputPassword').attr('disabled','disabled');
+      $('.add').attr('disabled','disabled');
+      $('.cancel').attr('disabled','disabled');
+      
+      var post = {
+        service: $('#inputService').val(),
+        password: $('#inputPassword').val(),
+        email: $('#inputEmail').val(),
+      }
+      ipcRenderer.send('addService', post);
+    }
+    
+    function replied(){
+      $('#inputService').removeAttr('disabled','disabled').val("");
+      $('#inputPassword').removeAttr('disabled','disabled').val("");
+      $('.add').removeAttr('disabled','disabled');
+      $('.cancel').removeAttr('disabled','disabled');
+      $("#myModal").modal("hide");
+    }
+    
+  </script>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Add a Password</h4>
+      </div> 
+      <div class="modal-body">
+          <div class="form-signin">
+            <label for="inputService" class="sr-only">Service</label>
+            <input type="input" id="inputService" class="form-control" placeholder="Service e.g Steam" required>
+            <label for="inputEmail" class="sr-only">Username</label>
+            <input type="input" id="inputEmail" class="form-control" placeholder="Email/Username" required>
+            <label for="inputPassword" class="sr-only">Password</label>
+            <input type="password" id="inputPassword" class="form-control" placeholder="Password" required>
+          </div> 
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default cancel" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary add">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+</html>
+ 

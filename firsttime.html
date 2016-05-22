@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Password App</title>
+    <link rel="stylesheet" href="./inc/css/bootstrap.css">
+    <link rel="stylesheet" href="./inc/css/bootstrap-theme.css">
+    <link rel="stylesheet" href="./inc/css/extra.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="form-signin">
+        <h2 class="form-signin-heading text-center">Welcome, please create a main password</h2>
+        <label for="inputPassword1" class="sr-only">Password</label>
+        <label for="inputPassword2" class="sr-only">Password Again</label> 
+        <input type="password" id="inputPassword1" class="form-control" placeholder="Password" required>
+        <input type="password" id="inputPassword2" class="form-control" placeholder="Password Again" required>
+        <button class="btn btn-lg btn-primary btn-block create" type="submit">Create</button>
+      </div>
+    </div>
+  </body>
+  
+  <script>
+    window.$ = window.jQuery = require('./inc/js/jquery.js');
+    const {ipcRenderer} = require('electron');
+    const notifier = require('node-notifier');
+    const path = require('path');
+    require('./inc/js/bootstrap.js');
+    require('./pubsub.js');
+  </script> 
+    
+  <script>
+    // Sign in
+    $('.create').click(function(){
+      create()
+    }); 
+    
+    $('#inputPassword1').keypress(function (e) {
+      if (e.which == 13) create()
+    });
+    $('#inputPassword2').keypress(function (e) {
+      if (e.which == 13) create()
+    });
+    
+    function replied(){ 
+      $('#inputPassword').attr('disabled','disabled');
+      setTimeout(function(){
+        $('#inputPassword').val("").removeAttr('disabled');
+        setTimeout(function(){
+        $('#inputPassword').focus()
+        },10);
+      },1000);
+    }
+    
+    function create(){
+      ipcRenderer.send('create', {pass1:$('#inputPassword1').val(),pass2:$('#inputPassword2').val()});
+    }
+  </script>
+</html> 
+  
