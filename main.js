@@ -2,7 +2,7 @@ const electron = require('electron')
 const path = require('path');
 const fs = require('fs');
 const {ipcMain} = require('electron');
-const passwordHash = require('password-hash');
+const passwordHash = require('password-hash'); 
 const defaultPass = "admin";
 const maintitle = "Password App";
 var nStore = require('nstore');
@@ -59,19 +59,50 @@ function createApp(){
 } 
 
 ipcMain.on('login', (event, inputPass) => { 
-  msg = {
-    result: false, 
-    humane: {
-      title: maintitle,
-      msg: "Login succeeded, please wait.." 
-    }
-  }
-  event.sender.send('reply', msg);
-  
   myRSA = cryptico.generateRSAKey(inputPass, 2048);
-  myPUB = cryptico.publicKeyString(myRSA);  
+  myPUB = cryptico.publicKeyString(myRSA);
   
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
+  passwords.all(function (err, results) {
+    if(err) throw new Error(err)
+    for(i in results){
+      decryptString(results[i].password, function(decrypted){
+      if(!decrypted){ 
+        msg = {
+          result: false, 
+          humane: {
+            title: maintitle,
+            msg: "Wrong password!" 
+          }
+        } 
+        event.sender.send('reply', msg);
+      }else{
+        msg = {
+          result: false, 
+          humane: {
+            title: maintitle,
+            msg: "Login succeeded, please wait.." 
+          }
+        }
+        event.sender.send('reply', msg);
+        mainWindow.loadURL(`file://${__dirname}/index.html`)
+      }
+      }); 
+      break;
+    }
+    
+    if(results.length === 0){
+        msg = {
+          result: false, 
+          humane: {
+            title: maintitle,
+            msg: "Account created, logging in." 
+          }
+        }
+        event.sender.send('reply', msg);
+        mainWindow.loadURL(`file://${__dirname}/index.html`)
+    }
+    
+  });
 });
  
 ipcMain.on('addService', (event, post) => {
@@ -110,8 +141,4 @@ function encryptString(string,cb){
 function decryptString(string,cb){
   var decrypted = cryptico.decrypt(string, myRSA);
   if(cb) cb(decrypted.plaintext); 
-}
-
-function hashPass(pass){ 
-  return passwordHash.generate(pass);
 }
