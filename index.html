@@ -51,7 +51,7 @@
           table.append("<tr>");
           table.append("<td>"+elem.service+"</td>");
           table.append("<td><span id='email_"+i+"'>"+elem.email+"</span> <button class='copyBtn' data-clipboard-target='#email_"+i+"'><img src='./inc/img/copy.png' alt='Copy to clipboard'></button</td>");
-          table.append("<td><span id='pass_"+i+"'>"+elem.password+"</span> <button class='copyBtn' data-clipboard-target='#pass_"+i+"'><img src='./inc/img/copy.png' alt='Copy to clipboard'></button></td>");
+          table.append("<td><span id='pass_"+i+"'>"+elem.password.replace(/./g, '*');+"</span> <button class='copyBtn' data-clipboard-target='#pass_"+i+"'><img src='./inc/img/copy.png' alt='Copy to clipboard'></button></td>");
           table.append("<td><button class='delBtn' dataid='"+elem.key+"'><img src='./inc/img/delete.png' alt='Delete password ("+elem.key+")'></button></td>");
           table.append("</tr>");
       });

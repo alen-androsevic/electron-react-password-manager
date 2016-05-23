@@ -24,7 +24,7 @@ let mainWindow
 var waitForAppInterval = setInterval(waitForApp,100);
 function waitForApp(){ 
   if(appReady){  
-    mainWindow.loadURL(`file://${__dirname}/login.html`)
+    mainWindow.loadURL(`file://${__dirname}/login.html`) 
     clearInterval(waitForAppInterval)
   } 
 }
