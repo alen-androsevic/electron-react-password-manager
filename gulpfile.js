@@ -9,5 +9,15 @@ gulp.task('serve', function () {
   electron.start();
 
   // Restart browser process
-  gulp.watch(['inc/*','main.js','*.html','renderer.js'], electron.restart);
+  gulp.watch([
+    'inc/css/*/**',
+    'inc/js/*/**',
+    'inc/css/*',
+    'inc/js/*',
+    'inc/html/*/**',
+    'inc/html/*',
+    'lib/*',
+    'lib/*/**',
+    'main.js',
+  ], electron.restart);
 }); 

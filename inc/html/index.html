@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8">
     <title>Password App</title>
-    <link rel="stylesheet" href="./inc/css/bootstrap.css">
-    <link rel="stylesheet" href="./inc/css/bootstrap-theme.css">
+    <link rel="stylesheet" href="../css/bootstrap.css">
+    <link rel="stylesheet" href="../css/bootstrap-theme.css">
   </head>
   <body>
     <div class="container">
@@ -28,14 +28,14 @@
     </div>
   </body>
   
-  <script> 
-    window.$ = window.jQuery = require('./inc/js/jquery.js');
+  <script>
+    window.$ = window.jQuery = require('../js/jquery.js');
     const {ipcRenderer} = require('electron');
     const notifier = require('node-notifier');
     const path = require('path');
-    require('./inc/js/bootstrap.js');
-    require('./pubsub.js');
-  </script> 
+    require('../js/bootstrap.js');
+    require('../js/pubsub.js');
+  </script>
     
   <script> 
     const Clipboard = require('clipboard');
@@ -46,7 +46,7 @@
       var $table = $('table');
       var table = $("table tbody");
       var i = 0;
-      $.each(results, function(idx, elem){
+      $.each(results,(idx, elem) => {
           i++; 
           table.append("<tr>");
           table.append("<td>"+elem.service+"</td>");
@@ -57,12 +57,12 @@
       }); 
     });
      
-    $(function(){
-      $('.add').click(function(){ 
+    $(() => {
+      $('.add').click(() => {
         addService();
       })
       
-      $('#inputService').keypress(function (e) {
+      $('#inputService').keypress(e => {
         if (e.which == 13) addService();
       });
       
@@ -73,13 +73,14 @@
       new Clipboard('.copyBtn');
     });
     
-    function addService(){
+    const addService = () => {
       $('#inputService').attr('disabled','disabled');
       $('#inputPassword').attr('disabled','disabled');
+      $('#inputEmail').attr('disabled','disabled');
       $('.add').attr('disabled','disabled');
       $('.cancel').attr('disabled','disabled');
       
-      var post = {
+      let post = {
         service: $('#inputService').val(),
         password: $('#inputPassword').val(),
         email: $('#inputEmail').val(),
@@ -87,9 +88,10 @@
       ipcRenderer.send('addService', post);
     }
     
-    function replied(){
+    const replied = data => {
       $('#inputService').removeAttr('disabled','disabled').val("");
       $('#inputPassword').removeAttr('disabled','disabled').val("");
+      $('#inputEmail').removeAttr('disabled','disabled').val("");
       $('.add').removeAttr('disabled','disabled');
       $('.cancel').removeAttr('disabled','disabled');
       $("#myModal").modal("hide");
