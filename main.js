@@ -1,8 +1,12 @@
 const electron = require('electron')
 const {ipcMain} = require('electron')
-const passwords = require('nstore').extend(require('nstore/query')()).new('./inc/db/passdb.db') 
+const path = require('path')
+const fs = require('fs-extra');
+const nstore = require('nstore')
+const nstoreQuery = nstore.extend(require('nstore/query')())
 
-const BrowserWindow = electron.BrowserWindow
+fs.mkdirsSync(path.join(__dirname, "inc", "db"))
+const passwords = nstoreQuery.new('./inc/db/passdb.db')
 
 electron.dev = true;
 electron.appReady = false;
