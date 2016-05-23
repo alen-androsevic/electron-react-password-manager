@@ -29,6 +29,7 @@
     "autoinstall": "^0.3.1",
     "bcrypt": "^0.8.6",
     "clipboard": "^1.5.10",
+    "cryptico": "^1.0.2",
     "electron-connect": "^0.4.2",
     "electron-notification-shim": "^1.1.0",
     "electron-toaster": "^2.0.1",
