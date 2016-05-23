@@ -2,8 +2,8 @@
 *Yay another useless password manager!*
 
 #### > Installation
+*For now until there are builds! :)*
 
-for now until there are builds! :)
  - `npm install`
  - `npm start`
 
