@@ -38,23 +38,40 @@
   </script>
     
   <script> 
+    let post;
+    let i;
     const Clipboard = require('clipboard');
     ipcRenderer.send('populateTable');
     
     ipcRenderer.on('passtable', (event, results) => {
-    console.log(results);
       var $table = $('table');
       var table = $("table tbody");
-      var i = 0;
+      i = 0;
       $.each(results,(idx, elem) => {
           i++; 
-          table.append("<tr>");
-          table.append("<td>"+elem.service+"</td>");
-          table.append("<td><span id='email_"+i+"'>"+elem.email+"</span> <button class='copyBtn' data-clipboard-target='#email_"+i+"'><img src='../img/copy.png' alt='Copy to clipboard'></button</td>");
-          table.append("<td><span class='passwords' id='pass_"+i+"'>"+elem.password+"</span> <button class='copyBtn' data-clipboard-target='#pass_"+i+"'><img src='../img/copy.png' alt='Copy to clipboard'></button></td>");
-          table.append("<td><button class='delBtn' dataid='"+elem.key+"'><img src='../img/delete.png' alt='Delete password ("+elem.key+")'></button></td>");
-          table.append("</tr>");
+          table.append("<tr id='trid_"+elem.id+"'>");
+          var tr = $("#trid_"+elem.id);
+          tr.append("<td>"+elem.service+"</td>");
+          tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputemail_"+i+"' value='"+elem.email+"' class='form-control'> <button class='copyBtn' data-clipboard-target='#inputemail_"+i+"'><img src='../img/copy.png'></button</td>");
+          tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputpass_"+i+"' rawpass='"+elem.password+"' value='"+elem.password.replace(/./g, '*')+"' class='form-control'></span> <button class='copyBtn' idcol='"+i+"' data-clipboard-target='#inputpass_"+i+"'><img src='../img/copy.png'></button></td>");
+          tr.append("<td><button class='delBtn' dataid='"+elem.id+"'><img src='../img/delete.png'></button></td>");
+          tr.append("</tr>");
       }); 
+      
+      $('.copyBtn').mouseover(function() {
+        let inputpass = $('#inputpass_'+$(this).attr('idcol'));
+        inputpass.val(inputpass.attr('rawpass'))
+      });
+       
+      $('.copyBtn').mouseout(function() {
+        let inputpass = $('#inputpass_'+$(this).attr('idcol'));
+        if(inputpass.attr('rawpass')) inputpass.val(inputpass.attr('rawpass').replace(/./g, '*'))
+      });
+      
+      $('.delBtn').click(function(){
+        $('#trid_'+$(this).attr('dataid')).remove();
+        ipcRenderer.send('deleteService', $(this).attr('dataid'));
+      })
     });
      
     $(() => {
@@ -62,11 +79,19 @@
         addService();
       })
       
+      $('.modal').on('shown.bs.modal', () => {
+        $('#inputService').focus();
+      })
+      
       $('#inputService').keypress(e => {
-        if (e.which == 13) addService();
+        if (e.which == 13) $('#inputEmail').focus();
       });
       
-      $('#inputPassword').keypress(function (e) {
+      $('#inputEmail').keypress(e => {
+        if (e.which == 13) $('#inputPassword').focus();
+      });
+      
+      $('#inputPassword').keypress(e => {
         if (e.which == 13) addService();
       });
       
@@ -80,7 +105,7 @@
       $('.add').attr('disabled','disabled');
       $('.cancel').attr('disabled','disabled');
       
-      let post = {
+      post = {
         service: $('#inputService').val(),
         password: $('#inputPassword').val(),
         email: $('#inputEmail').val(),
@@ -88,13 +113,51 @@
       ipcRenderer.send('addService', post);
     }
     
+    let clicked = false;
+    
     const replied = data => {
+      if(!post) return;
+      if(clicked){
+        clicked = false;
+        return;
+      }
+      
+      if(data.humane.extra) post.id = data.humane.extra.id;
+      i++;
       $('#inputService').removeAttr('disabled','disabled').val("");
       $('#inputPassword').removeAttr('disabled','disabled').val("");
       $('#inputEmail').removeAttr('disabled','disabled').val("");
       $('.add').removeAttr('disabled','disabled');
       $('.cancel').removeAttr('disabled','disabled');
       $("#myModal").modal("hide");
+      var $table = $('table');
+      var table = $("table tbody");
+      table.append("<tr id='trid_"+post.id+"'>");
+      var tr = $("#trid_"+post.id);
+      tr.append("<td>"+post.service+"</td>");
+      tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputemail_"+i+"' value='"+post.email+"' class='form-control'> <button id='copyemailbtn_"+i+"'  data-clipboard-target='#inputemail_"+i+"'><img src='../img/copy.png'></button></td>");
+      tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputpass_"+i+"' rawpass='"+post.password+"' value='"+post.password.replace(/./g, '*')+"' class='form-control'></span> <button id='copypassbtn_"+i+"' idcol='"+i+"' data-clipboard-target='#inputpass_"+i+"'><img src='../img/copy.png'></button></td>");
+      tr.append("<td><button id='deletebtn_"+i+"' dataid='"+post.id+"'><img src='../img/delete.png'></button></td>");
+      tr.append("</tr>"); 
+      
+      $('#copypassbtn_'+i).mouseover(function() { 
+        let inputpass = $('#inputpass_'+$(this).attr('idcol'));
+        inputpass.val(inputpass.attr('rawpass'))
+      });
+       
+      $('#copypassbtn_'+i).mouseout(function() {
+        let inputpass = $('#inputpass_'+$(this).attr('idcol'));
+        if(inputpass.attr('rawpass')) inputpass.val(inputpass.attr('rawpass').replace(/./g, '*'))
+      });
+        
+      $('#deletebtn_'+i).click(function(){
+        clicked = true;
+        $('#trid_'+$(this).attr('dataid')).remove();
+        ipcRenderer.send('deleteService', $(this).attr('dataid'));
+      })
+      
+      new Clipboard('#copypassbtn_'+i);
+      new Clipboard('#copyemailbtn_'+i);
     }
     
   </script>

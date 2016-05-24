@@ -1,21 +1,23 @@
 const electron = require('electron')
-const {ipcMain} = require('electron')
-const path = require('path')
-const fs = require('fs-extra');
-const nstore = require('nstore')
-const nstoreQuery = nstore.extend(require('nstore/query')())
+const connection = new(require('nosqlite').Connection)('./inc/db')
+const storage = connection.database('data')
 
-fs.mkdirsSync(path.join(__dirname, "inc", "db"))
-const passwords = nstoreQuery.new('./inc/db/passdb.db')
-
+storage.exists(function (exists) {
+  if (!exists){
+    storage.create(function (err) {
+      if (err) throw new Error(err)
+    });
+  }
+});
+ 
 electron.dev = true;
 electron.appReady = false;
-electron.ipcMain = ipcMain;
-electron.passwords = passwords;
+electron.ipcMain = require('electron')
+electron.passwords = storage
 
 const events = require('./lib/events').init(electron, (err, data) => {
-  if(err) throw new Error(err);
+  if(err) throw new Error(err)
 })
 const socket = require('./lib/socket').init(electron, (err, data) => {
-  if(err) throw new Error(err);
+  if(err) throw new Error(err)
 })

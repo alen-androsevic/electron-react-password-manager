@@ -1,5 +1,4 @@
 ipcRenderer.on('reply', (event, msg) => {
-  console.log(":O");
   notifier.notify({
     title: msg.humane.title,
     message: msg.humane.msg,

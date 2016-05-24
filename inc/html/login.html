@@ -28,25 +28,28 @@
   </script>
     
   <script>
-    $('.signin').click(function(){
+    $('.signin').click(() => {
       login()
     });
     
-    $('#inputPassword').keypress(function (e) {
+    $('#inputPassword').keypress(e => {
       if (e.which == 13) login()
     });
+    $(document).ready(() => {
+      $('#inputPassword').focus()
+    });
     
-    function replied(){ 
+    const replied = () => {
       $('#inputPassword').attr('disabled','disabled');
-      setTimeout(function(){
+      setTimeout(() => {
         $('#inputPassword').val("").removeAttr('disabled');
-        setTimeout(function(){
+        setTimeout(() => {
           $('#inputPassword').focus()
         },10);
       },1000);
     }
-    
-    function login(){
+     
+    const login = () => {
       ipcRenderer.send('login', $('#inputPassword').val());
     }
   </script>
