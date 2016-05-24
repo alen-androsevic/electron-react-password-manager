@@ -3,8 +3,10 @@ const connection = new(require('nosqlite').Connection)('./inc/db')
 const storage = connection.database('data')
 
 storage.exists(function (exists) {
+  electron.firstTime = false
   if (!exists){
-    storage.create(function (err) {
+   electron.firstTime = true
+   storage.create(function (err) {
       if (err) throw new Error(err)
     });
   }
