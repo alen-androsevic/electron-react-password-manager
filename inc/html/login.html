@@ -41,8 +41,10 @@
     
     const replied = () => {
       $('#inputPassword').attr('disabled','disabled');
+      $('.signin').attr('disabled','disabled');
       setTimeout(() => {
         $('#inputPassword').val("").removeAttr('disabled');
+        $('.signin').removeAttr('disabled');
         setTimeout(() => {
           $('#inputPassword').focus()
         },10);

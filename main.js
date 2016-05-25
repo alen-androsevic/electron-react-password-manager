@@ -1,18 +1,8 @@
 const electron = require('electron')
-const connection = new(require('nosqlite').Connection)('./inc/db')
-const storage = connection.database('data')
-
-storage.exists(function (exists) {
-  electron.firstTime = false
-  if (!exists){
-   electron.firstTime = true
-   storage.create(function (err) {
-      if (err) throw new Error(err)
-    });
-  }
-});
+const connection = new(require('nosqlite').Connection)('./inc')
+const storage = connection.database('db')
  
-electron.dev = true;
+electron.dev = false;
 electron.appReady = false;
 electron.ipcMain = require('electron')
 electron.passwords = storage

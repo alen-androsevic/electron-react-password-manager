@@ -44,19 +44,19 @@
     ipcRenderer.send('populateTable');
     
     ipcRenderer.on('passtable', (event, results) => {
-      var $table = $('table');
+      var $table = $('table'); 
       var table = $("table tbody");
       i = 0;
       $.each(results,(idx, elem) => {
-          i++; 
+          i++;
           table.append("<tr id='trid_"+elem.id+"'>");
           var tr = $("#trid_"+elem.id);
           tr.append("<td>"+elem.service+"</td>");
           tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputemail_"+i+"' value='"+elem.email+"' class='form-control'> <button class='copyBtn' data-clipboard-target='#inputemail_"+i+"'><img src='../img/copy.png'></button</td>");
-          tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputpass_"+i+"' rawpass='"+elem.password+"' value='"+elem.password.replace(/./g, '*')+"' class='form-control'></span> <button class='copyBtn' idcol='"+i+"' data-clipboard-target='#inputpass_"+i+"'><img src='../img/copy.png'></button></td>");
+          tr.append("<td><input style='width:80%;display:inline' type='text' readonly id='inputpass_"+i+"' rawpass="+elem.password+" value="+elem.password.replace(/./g, '*')+" class='form-control'></span> <button class='copyBtn' idcol='"+i+"' data-clipboard-target='#inputpass_"+i+"'><img src='../img/copy.png'></button></td>");
           tr.append("<td><button class='delBtn' dataid='"+elem.id+"'><img src='../img/delete.png'></button></td>");
           tr.append("</tr>");
-      }); 
+      });
       
       $('.copyBtn').mouseover(function() {
         let inputpass = $('#inputpass_'+$(this).attr('idcol'));
