@@ -10,11 +10,8 @@ gulp.task('serve', function () {
 
   // Restart browser process
   gulp.watch([
-    'inc/css/*/**',
-    'inc/js/*/**',
     'inc/css/*',
     'inc/js/*',
-    'inc/html/*/**',
     'inc/html/*',
     'lib/*',
     'lib/*/**',

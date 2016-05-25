@@ -3,7 +3,6 @@ const connection = new(require('nosqlite').Connection)('./inc')
 const storage = connection.database('db')
  
 electron.dev = false;
-electron.appReady = false;
 electron.ipcMain = require('electron')
 electron.passwords = storage
 

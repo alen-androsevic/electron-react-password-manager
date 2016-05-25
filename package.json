@@ -31,8 +31,11 @@
     "electron-connect": "^0.4.2",
     "electron-notification-shim": "^1.1.0",
     "electron-toaster": "^2.0.1",
+    "fingerprintjs2": "^1.2.0",
     "fs-extra": "^0.30.0",
+    "getmac": "^1.2.1",
     "gulp": "^3.9.1",
+    "js-base64": "^2.1.9",
     "node-notifier": "^4.5.0",
     "nosqlite": "^0.2.2",
     "notification-shim": "^0.1.1"

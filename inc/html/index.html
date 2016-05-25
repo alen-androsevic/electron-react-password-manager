@@ -49,6 +49,8 @@
       i = 0;
       $.each(results,(idx, elem) => {
           i++;
+          if(elem.service.toLowerCase() == "steam") elem.service = "<img src='../img/steam.png'> " + elem.service
+          if(elem.service.toLowerCase() == "google") elem.service = "<img src='../img/google.png'> " + elem.service
           table.append("<tr id='trid_"+elem.id+"'>");
           var tr = $("#trid_"+elem.id);
           tr.append("<td>"+elem.service+"</td>");
@@ -124,6 +126,8 @@
       
       if(data.humane.extra) post.id = data.humane.extra.id;
       i++;
+      if(post.service.toLowerCase() == "steam") post.service = "<img src='../img/steam.png'> " + post.service
+      if(post.service.toLowerCase() == "google") post.service = "<img src='../img/google.png'> " + post.service
       $('#inputService').removeAttr('disabled','disabled').val("");
       $('#inputPassword').removeAttr('disabled','disabled').val("");
       $('#inputEmail').removeAttr('disabled','disabled').val("");
