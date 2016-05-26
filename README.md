@@ -18,6 +18,4 @@
 
 #### > Showcase
 ![](http://i.imgur.com/XORDoWr.png)
-![](http://i.imgur.com/cVEelLk.png)
 ![](http://i.imgur.com/pQp7ime.png)
-![](http://i.imgur.com/TIslvkx.png)
