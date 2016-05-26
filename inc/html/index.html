@@ -122,7 +122,7 @@
       if(clicked){
         clicked = false;
         return;
-      }
+      } 
       
       if(data.humane.extra) post.id = data.humane.extra.id;
       i++;
@@ -135,7 +135,7 @@
       $('.cancel').removeAttr('disabled','disabled');
       $("#myModal").modal("hide");
       var $table = $('table');
-      var table = $("table tbody");
+      var table = $("table tbody");  
       table.append("<tr id='trid_"+post.id+"'>");
       var tr = $("#trid_"+post.id);
       tr.append("<td>"+post.service+"</td>");

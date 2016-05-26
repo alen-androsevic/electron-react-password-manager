@@ -1,15 +1,13 @@
 const electron = require('electron')
 const connection = new(require('nosqlite').Connection)('./inc/db')
-const passwordStorage = connection.database('passwords')
-const saltStorage = connection.database('salt')
 
 electron.crypt = {
   bits: 2048,
   supersalt: {
     saltLen: 2048,
-    maxpos: 160
+    maxpos: 190
   },
-  pbkd2f: { 
+  pbkd2f: {
     iterations: 300000,
     count: 420
   }
@@ -18,8 +16,9 @@ electron.crypt = {
 electron.dev = false
 electron.ipcMain = electron
 electron.db = {
-  passwords: passwordStorage,
-  salt: saltStorage
+  passwords: connection.database('passwords'),
+  salt: connection.database('salt'),
+  encryption: connection.database('encryption')
 }
 
 electron.log = log => {
@@ -29,6 +28,7 @@ electron.log = log => {
 const events = require('./lib/events').init(electron, (err, data) => {
   if(err) throw new Error(err)
 })
+
 const socket = require('./lib/socket').init(electron, (err, data) => {
   if(err) throw new Error(err)
-}) 
+})
