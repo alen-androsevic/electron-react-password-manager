@@ -14,8 +14,8 @@ const electron    = require('electron-connect').server.create()
 gulp.task('default', function() {
   // Watch for changes in these files
   gulp.watch([
-    'inc/css/*',
-    'inc/js/*',
+    'inc/css/src/*',
+    'inc/js/src/*',
     'inc/html/*',
     'inc/react/src/*',
     'lib/*',
@@ -24,9 +24,8 @@ gulp.task('default', function() {
   ], {debounceDelay: 2000}, (() => {
     // What do we do when a change has been detected
     console.log('Change detected, reloading/rebuilding files')
-    buildJs()
-    buildCss()
-    buildReact('create', () => {
+    electron.stop()
+    rebuildAll(() => {
       electron.restart()
     })
   })
@@ -88,11 +87,28 @@ const buildJs = cb => {
   }))
 }
 
-// Build the files on start, just to be sure :)
-buildJs(() => {
-  console.log('Javascript build complete')
-  buildCss(() => {
-    console.log('Css build complete')
-    electron.start()
+// How we rebuild all
+const rebuildAll = cb => {
+  buildJs(() => {
+    console.log('Javascript build complete')
+    buildCss(() => {
+      console.log('Css build complete')
+      buildReact('create', () => {
+        console.log('React build \'create\' complete.')
+        buildReact('index', () => {
+          console.log('React build \'index\' complete.')
+          buildReact('login', () => {
+            console.log('React build \'login\' complete.')
+            if (cb)
+              cb()
+          })
+        })
+      })
+    })
   })
+}
+
+// Build the all the files on start, just to be sure :)
+rebuildAll(() => {
+  electron.start()
 })

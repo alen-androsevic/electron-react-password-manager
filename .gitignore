@@ -2,5 +2,6 @@ node_modules
 /inc/db/**/*.json
 *.db
 *.log
-/inc/js/build/**/*.js
-/inc/react/build/**/*.js
+/inc/js/build
+/inc/css/build
+/inc/react/build

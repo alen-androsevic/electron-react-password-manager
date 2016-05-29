@@ -6,10 +6,9 @@
 
 ## > Installation
 
-*For now until there are builds! :)*
+*For now until there are builds, you will have to compile it yourself :)*
 
--   `npm install`
--   `npm start`
+-   `gulp`
 
 ## > Features
 
@@ -17,7 +16,7 @@
 -   Frontend built with [React](https://facebook.github.io/react/)
 -   Random salt for PBKD2F that is generated on first run
 -   up to 400k PBKD2F iterations
--   up to 4096bit RSA passphrase encryption
+-   up to 4096bit RSA passphrase encryption (will take you about 1 minute)
 -   Stores only passwords encrypted, to save time for decryption :)
 -   No accounts just a password you come up with to rule them all
 -   Your password is your passphrase for your encryption key
