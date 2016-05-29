@@ -1,4 +1,4 @@
-# Pass App
+# electron-react-password-manager
 
 *Yay another useless password manager!*
 
