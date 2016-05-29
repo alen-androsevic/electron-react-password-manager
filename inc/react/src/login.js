@@ -23,19 +23,20 @@ const LoginAccount = React.createClass({
   handlePassChange: function(e) {
     this.setState({password: e.target.value})
   },
+
   handleSubmit: function(e) {
     e.preventDefault()
 
     ipcRenderer.send('login', {
-      pass: this.state.password,
-      bits: encryption.bits,
-      pbkd2f: encryption.pbkd2f
+      pass:   this.state.password,
+      bits:   encryption.bits,
+      pbkd2f: encryption.pbkd2f,
     })
     this.setState({password: ''})
   },
 
   render: function() {
-    return (
+    return(
       <form onSubmit={this.handleSubmit}>
         <h2>Please log in</h2>
         <FormGroup controlId='formControlsPassword'>

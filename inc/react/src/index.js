@@ -12,57 +12,66 @@ const ControlLabel   = require('react-bootstrap').ControlLabel
 const FormControl    = require('react-bootstrap').FormControl
 const Table          = require('react-bootstrap').Table
 
-const PasswordCategoryRow = React.createClass({
-  render: function() {
-    return (<tr><th colSpan="2">{this.props.category}</th></tr>);
-  }
-});
-
+// Each table row
 const PasswordRow = React.createClass({
   render: function() {
     // TODO: maak dit af, auto hidden van wachtwoord met sterretjes
     // const password = "***"
-    return (
+    return(
       <tr>
         <td>{this.props.password.service}</td>
         <td>{this.props.password.email}</td>
         <td>{this.props.password.password}</td>
+        <td></td>
       </tr>
-    );
+    )
   }
-});
+})
 
+// How the table is created
 const TableCreate = React.createClass({
+  handleRowRemove: function(password) {
+    var index = -1
+    var clength = this.props.passwords.length
+		for(var i = 0;i < clength;i++ ) {
+			if(this.props.passwords[i].id === password.id) {
+				index = i
+				break
+			}
+		}
+		this.props.passwords.splice(index, 1)
+  },
   render: function() {
-    var rows = [];
-    var lastCategory = null;
+    var rows = []
+    var lastCategory = null
     this.props.passwords.forEach(function(password) {
-      console.log(password)
-      rows.push(<PasswordRow password={password} key={password.id} />);
-      lastCategory = password.category;
-    });
-    return (
-      <Table striped bordered condensed hover>
+      rows.push(<PasswordRow password={password} key={password.id} />)
+      lastCategory = password.category
+    })
+    return(
+      <Table striped bordered condensed hover responsive>
         <thead>
           <tr>
             <th>Service</th>
             <th>Email</th>
             <th>Password</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>{rows}</tbody>
       </Table>
-    );
+    )
   }
-});
+})
 
+// The add password form
 const AddPasswordForm = React.createClass({
   getInitialState() {
     return {
       showModal: false,
       service: '',
       email: '',
-      password: ''
+      password: '',
     }
   },
   handleServiceChange: function(e){
@@ -81,10 +90,10 @@ const AddPasswordForm = React.createClass({
       email: this.state.email,
       password: this.state.password,
     }
-    ipcRenderer.send('addService', post);
+    ipcRenderer.send('addService', post)
   },
   render: function (){
-    return (
+    return(
       <form onSubmit={this.handleSubmit}>
         <FormGroup controlId="formControlsText">
           <ControlLabel>Service</ControlLabel>
@@ -106,9 +115,10 @@ const AddPasswordForm = React.createClass({
   }
 })
 
+// The add password button
 const AddPasswordButton = React.createClass({
   render: function (){
-    return (
+    return(
       <div>
         <Button onClick={this.open} type="submit">
           Add Password
@@ -131,21 +141,23 @@ const AddPasswordButton = React.createClass({
   },
 
   getInitialState() {
-    return { showModal: false };
+    return { showModal: false }
   },
 
   close() {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false })
   },
 
   open() {
-    this.setState({ showModal: true });
+    this.setState({ showModal: true })
   },
 })
 
-const PasswordTable = React.createClass({
+
+// Our main view
+const Main = React.createClass({
   render: function() {
-    return (
+    return(
       <div>
         <h1>Password App</h1>
         <AddPasswordButton />
@@ -159,7 +171,7 @@ const PasswordTable = React.createClass({
 ipcRenderer.on('indexRender', function(event, passwords) {
   console.log(passwords)
   ReactDOM.render(
-    <PasswordTable passwords={passwords} />,
+    <Main passwords={passwords} />,
     document.getElementById('react-index')
   )
 })

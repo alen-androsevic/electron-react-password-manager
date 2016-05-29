@@ -33,6 +33,7 @@
     "react-dom": "^15.1.0"
   },
   "dependencies": {
+    "async": "^2.0.0-rc.5",
     "clipboard": "^1.5.10",
     "cryptico": "^1.0.2",
     "electron-connect": "^0.4.2",

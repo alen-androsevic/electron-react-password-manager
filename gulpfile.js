@@ -10,23 +10,55 @@ const ignore      = require('gulp-ignore')
 const gulpUtil    = require('gulp-util')
 const minifyCSS   = require('gulp-minify-css')
 const electron    = require('electron-connect').server.create()
-const htmlmin       = require('gulp-htmlmin')
+const htmlmin     = require('gulp-htmlmin')
+const async       = require('async')
+
+const debounceDelay = {debounceDelay: 8000}
 
 gulp.task('default', function() {
-  // Watch for changes in these files
+
   gulp.watch([
-    'inc/css/src/*',
-    'inc/js/src/*',
-    'inc/html/src/*',
-    'inc/react/src/*',
     'lib/*',
     'lib/*/**',
     'main.js',
-  ], {debounceDelay: 8000}, (() => {
-    // What do we do when a change has been detected
-    console.log('Change detected, reloading/rebuilding files')
+  ], debounceDelay, (() => {
+    console.log('Program change detected, restarting')
     electron.stop()
-    rebuildAll(() => {
+    electron.restart()
+  }))
+  gulp.watch([
+    'inc/react/src/*',
+  ], debounceDelay, (() => {
+    console.log('React change detected, rebuilding files')
+    electron.stop()
+    buildAllReact(() => {
+      electron.restart()
+    })
+  }))
+  gulp.watch([
+    'inc/css/src/*',
+  ], debounceDelay, (() => {
+    console.log('CSS Change detected, minfiying and concating css files')
+    electron.stop()
+    buildCss(() => {
+      electron.restart()
+    })
+  }))
+  gulp.watch([
+    'inc/js/src/*',
+  ], debounceDelay, (() => {
+    console.log('JS Change detected, minfiying and concating js files')
+    electron.stop()
+    buildJs(() => {
+      electron.restart()
+    })
+  }))
+  gulp.watch([
+    'inc/html/src/*',
+  ], debounceDelay, (() => {
+    console.log('HTML Change detected, minfiying html files')
+    electron.stop()
+    buildHtml(() => {
       electron.restart()
     })
   })
@@ -95,25 +127,64 @@ const buildJs = cb => {
     }))
 }
 
+// How we build all react files
+const buildAllReact = cb => {
+  async.parallel({
+    create: function(callback){
+      buildReact('create', () => {
+        callback()
+      })
+    },
+    index: function(callback){
+      buildReact('index', () => {
+        callback()
+      })
+    },
+    login: function(callback){
+      buildReact('login', () =>  {
+        callback()
+      })
+    }
+  },
+  function(err, results) {
+    if (err) throw new Error(err)
+    if (cb)
+      cb()
+  });
+}
+
 // How we rebuild all
 const rebuildAll = cb => {
-  buildHtml() // No need to show when done, so fast.
-  buildJs(() => {
-    console.log('Javascript build complete')
-    buildCss(() => {
-      console.log('Css build complete')
-      buildReact('create', () => {
-        console.log('React build \'create\' complete.')
-        buildReact('index', () => {
-          console.log('React build \'index\' complete.')
-          buildReact('login', () => {
-            console.log('React build \'login\' complete.')
-            if (cb)
-              cb()
-          })
-        })
+  async.parallel({
+    html: callback => {
+      console.log("html rebuilding..")
+      buildHtml(() =>  {
+        console.log("html done..")
+        callback()
       })
-    })
+    },
+    js: callback => {
+      console.log("js rebuilding..")
+      buildJs(() =>  {
+        console.log("js done..")
+        callback()
+      })
+    },
+    css: callback => {
+      console.log("css rebuilding..")
+      buildCss(() =>  {
+        console.log("css done..")
+        callback()
+      })
+    },
+    buildAllReact: callback => {
+      console.log("react rebuilding..")
+      buildAllReact(() =>  {
+        console.log("react done..")
+        if (cb)
+          cb()
+      })
+    }
   })
 }
 

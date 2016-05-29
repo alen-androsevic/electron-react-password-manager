@@ -16,8 +16,8 @@ const CreateAccount = React.createClass({
     return {
       passwordone: '',
       passwordtwo: '',
-      encryption: '512',
-      hashing: '1',
+      encryption:  '512',
+      hashing:     '1',
     }
   },
 
@@ -46,46 +46,41 @@ const CreateAccount = React.createClass({
 
     // TODO: make the bits and pbkd2f iterations and count dynamic
     if (this.state.hashing == 1) {
-      console.log("defined 1")
       var pbkd2f = {
         iterations: 100000,
-        count: 140,
+        count:      140,
       }
     }
     if (this.state.hashing == 2) {
-      console.log("defined 2")
       var pbkd2f = {
         iterations: 200000,
-        count: 270,
+        count:      270,
       }
     }
     if (this.state.hashing == 3) {
-      console.log("defined 3")
       var pbkd2f = {
         iterations: 300000,
-        count: 420,
+        count:      420,
       }
     }
     if (this.state.hashing == 4) {
-      console.log("defined 4")
       var pbkd2f = {
         iterations: 400000,
-        count: 560,
+        count:      560,
       }
     }
-    console.log(pbkd2f)
 
     ipcRenderer.send('login', {
-      pass: this.state.passwordone,
-      pass2: this.state.passwordtwo,
-      bits: this.state.encryption,
+      pass:   this.state.passwordone,
+      pass2:  this.state.passwordtwo,
+      bits:   this.state.encryption,
       pbkd2f: pbkd2f
     })
     this.setState({passwordtwo: '', passwordone: ''})
   },
 
   render: function() {
-    return (
+    return(
       <form onSubmit={this.handleSubmit}>
         <h2>Welcome! Please create a master password</h2>
         <FormGroup controlId='formControlsPassword'>
@@ -117,7 +112,7 @@ const CreateAccount = React.createClass({
           </FormControl>
         </FormGroup>
         <Button type='submit'>
-          Add Password
+          Create Account
         </Button>
       </form>
     )

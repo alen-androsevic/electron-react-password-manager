@@ -2,8 +2,6 @@
 
 *Yay another useless password manager!*
 
-**Warning: The current branch 'react' is broken frontend wise.**
-
 ## > Installation
 
 *For now until there are builds, you will have to compile it yourself :)*
