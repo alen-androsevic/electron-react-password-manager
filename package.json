@@ -1,7 +1,7 @@
 {
   "name": "PassApp",
-  "version": "0.0.3",
-  "description": "A minimal password storing application",
+  "version": "0.1.0",
+  "description": "A secure password storing application. Built with Electron and React",
   "main": "main.js",
   "scripts": {
     "start": "electron main.js",
@@ -9,20 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron/electron-quick-start.git"
+    "url": "git+https://michaeldegroot@bitbucket.org/michaeldegroot/passapp.git"
   },
   "keywords": [
     "Electron",
-    "quick",
-    "start",
-    "tutorial"
+    "React",
+    "Password",
+    "Storage"
   ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
-  "bugs": {
-    "url": "https://github.com/electron/electron-quick-start/issues"
-  },
-  "homepage": "https://github.com/electron/electron-quick-start#readme",
+  "author": "michaeldegroot",
+  "license": "MIT",
   "devDependencies": {
     "babel-core": "^6.9.0",
     "babel-loader": "^6.2.4",
@@ -34,12 +30,10 @@
     "gulp-uglify": "^1.5.3",
     "gulp-webpack": "^1.5.0",
     "react": "^15.1.0",
-    "react-dom": "^15.1.0",
-    "webpack": "^1.13.1"
+    "react-dom": "^15.1.0"
   },
   "dependencies": {
     "clipboard": "^1.5.10",
-    "connect-static": "^1.5.2",
     "cryptico": "^1.0.2",
     "electron-connect": "^0.4.2",
     "electron-notification-shim": "^1.1.0",
