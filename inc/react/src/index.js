@@ -1,15 +1,16 @@
 'use strict'
 
-const React           = require('react')
-const ReactDOM        = require('react-dom')
-const Button          = require('react-bootstrap').Button
-const Popover         = require('react-bootstrap').Popover
-const Tooltip         = require('react-bootstrap').Tooltip
-const Modal           = require('react-bootstrap').Modal
-const OverlayTrigger  = require('react-bootstrap').OverlayTrigger
-const FormGroup       = require('react-bootstrap').FormGroup
-const ControlLabel    = require('react-bootstrap').ControlLabel
-const FormControl     = require('react-bootstrap').FormControl
+const React          = require('react')
+const ReactDOM       = require('react-dom')
+const Button         = require('react-bootstrap').Button
+const Popover        = require('react-bootstrap').Popover
+const Tooltip        = require('react-bootstrap').Tooltip
+const Modal          = require('react-bootstrap').Modal
+const OverlayTrigger = require('react-bootstrap').OverlayTrigger
+const FormGroup      = require('react-bootstrap').FormGroup
+const ControlLabel   = require('react-bootstrap').ControlLabel
+const FormControl    = require('react-bootstrap').FormControl
+const Table          = require('react-bootstrap').Table
 
 const PasswordCategoryRow = React.createClass({
   render: function() {
@@ -31,19 +32,17 @@ const PasswordRow = React.createClass({
   }
 });
 
-const Table = React.createClass({
+const TableCreate = React.createClass({
   render: function() {
     var rows = [];
     var lastCategory = null;
     this.props.passwords.forEach(function(password) {
-      if (password.category !== lastCategory) {
-        rows.push(<PasswordCategoryRow category={password.category} key={password.category} />);
-      }
-      rows.push(<PasswordRow password={password} key={password.name} />);
+      console.log(password)
+      rows.push(<PasswordRow password={password} key={password.id} />);
       lastCategory = password.category;
     });
     return (
-      <table>
+      <Table striped bordered condensed hover>
         <thead>
           <tr>
             <th>Service</th>
@@ -52,7 +51,7 @@ const Table = React.createClass({
           </tr>
         </thead>
         <tbody>{rows}</tbody>
-      </table>
+      </Table>
     );
   }
 });
@@ -60,7 +59,7 @@ const Table = React.createClass({
 const AddPasswordForm = React.createClass({
   getInitialState() {
     return {
-      showModal: false ,
+      showModal: false,
       service: '',
       email: '',
       password: ''
@@ -111,7 +110,9 @@ const AddPasswordButton = React.createClass({
   render: function (){
     return (
       <div>
-        <Button onClick={this.open} bsStyle="success">Add Password</Button>
+        <Button onClick={this.open} type="submit">
+          Add Password
+        </Button>
 
         <Modal id="createPasswordModal" show={this.state.showModal} onHide={this.close}>
           <Modal.Header closeButton>
@@ -148,7 +149,7 @@ const PasswordTable = React.createClass({
       <div>
         <h1>Password App</h1>
         <AddPasswordButton />
-        <Table passwords={this.props.passwords} />
+        <TableCreate passwords={this.props.passwords} />
       </div>
     )
   }
