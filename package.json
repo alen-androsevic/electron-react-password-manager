@@ -42,6 +42,7 @@
     "fs-extra": "^0.30.0",
     "gulp": "^3.9.1",
     "gulp-ignore": "^2.0.1",
+    "gulp-minify-css": "^1.2.4",
     "gulp-util": "^3.0.7",
     "js-base64": "^2.1.9",
     "node-notifier": "^4.5.0",

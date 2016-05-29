@@ -12,7 +12,7 @@ var Create = React.createClass({
   handleChange: function(event) {
     this.setState({
       value: event.target.value,
-    });
+    })
   },
   render: function() {
     return (
