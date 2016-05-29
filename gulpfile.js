@@ -22,7 +22,7 @@ gulp.task('default', function() {
     'lib/*',
     'lib/*/**',
     'main.js',
-  ], {debounceDelay: 2000}, (() => {
+  ], {debounceDelay: 8000}, (() => {
     // What do we do when a change has been detected
     console.log('Change detected, reloading/rebuilding files')
     electron.stop()

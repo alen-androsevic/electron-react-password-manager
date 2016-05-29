@@ -1,31 +1,37 @@
 'use strict'
 
-const React    = require('react')
-const ReactDOM = require('react-dom')
+const React           = require('react')
+const ReactDOM        = require('react-dom')
+const Button          = require('react-bootstrap').Button
+const Popover         = require('react-bootstrap').Popover
+const Tooltip         = require('react-bootstrap').Tooltip
+const Modal           = require('react-bootstrap').Modal
+const OverlayTrigger  = require('react-bootstrap').OverlayTrigger
+const FormGroup       = require('react-bootstrap').FormGroup
+const ControlLabel    = require('react-bootstrap').ControlLabel
+const FormControl     = require('react-bootstrap').FormControl
 
-var PasswordCategoryRow = React.createClass({
+const PasswordCategoryRow = React.createClass({
   render: function() {
     return (<tr><th colSpan="2">{this.props.category}</th></tr>);
   }
 });
 
-var PasswordRow = React.createClass({
+const PasswordRow = React.createClass({
   render: function() {
-    var name = this.props.password.stocked ?
-      this.props.password.name :
-      <span style={{color: 'red'}}>
-        {this.props.password.name}
-      </span>;
+    // TODO: maak dit af, auto hidden van wachtwoord met sterretjes
+    // const password = "***"
     return (
       <tr>
-        <td>{name}</td>
-        <td>{this.props.password.price}</td>
+        <td>{this.props.password.service}</td>
+        <td>{this.props.password.email}</td>
+        <td>{this.props.password.password}</td>
       </tr>
     );
   }
 });
 
-var PasswordTable = React.createClass({
+const Table = React.createClass({
   render: function() {
     var rows = [];
     var lastCategory = null;
@@ -40,8 +46,9 @@ var PasswordTable = React.createClass({
       <table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Price</th>
+            <th>Service</th>
+            <th>Email</th>
+            <th>Password</th>
           </tr>
         </thead>
         <tbody>{rows}</tbody>
@@ -50,36 +57,111 @@ var PasswordTable = React.createClass({
   }
 });
 
-var SearchBar = React.createClass({
-  render: function() {
+const AddPasswordForm = React.createClass({
+  getInitialState() {
+    return {
+      showModal: false ,
+      service: '',
+      email: '',
+      password: ''
+    }
+  },
+  handleServiceChange: function(e){
+    this.setState({service: e.target.value})
+  },
+  handleEmailChange: function(e){
+    this.setState({email: e.target.value})
+  },
+  handlePasswordChange: function(e){
+    this.setState({password: e.target.value})
+  },
+  handleSubmit: function(e) {
+    e.preventDefault()
+    var post = {
+      service: this.state.service,
+      email: this.state.email,
+      password: this.state.password,
+    }
+    ipcRenderer.send('addService', post);
+  },
+  render: function (){
     return (
-      <form>
-        <input type="text" placeholder="Search..." />
-        <p>
-          <input type="checkbox" />
-          {' '}
-          Only show passwords in stock
-        </p>
+      <form onSubmit={this.handleSubmit}>
+        <FormGroup controlId="formControlsText">
+          <ControlLabel>Service</ControlLabel>
+          <FormControl onChange={this.handleServiceChange} value={this.state.service} type="text" placeholder="Example: Steam, Google" />
+        </FormGroup>
+        <FormGroup controlId="formControlsText">
+          <ControlLabel>Email address</ControlLabel>
+          <FormControl onChange={this.handleEmailChange} value={this.state.email} type="text" placeholder="Enter email/username" />
+        </FormGroup>
+        <FormGroup controlId="formControlsPassword">
+          <ControlLabel>Password</ControlLabel>
+          <FormControl onChange={this.handlePasswordChange} value={this.state.password} type="password" />
+        </FormGroup>
+        <Button type="submit">
+          Add Password
+        </Button>
       </form>
     )
   }
 })
 
-var FilterablePasswordTable = React.createClass({
+const AddPasswordButton = React.createClass({
+  render: function (){
+    return (
+      <div>
+        <Button onClick={this.open} bsStyle="success">Add Password</Button>
+
+        <Modal id="createPasswordModal" show={this.state.showModal} onHide={this.close}>
+          <Modal.Header closeButton>
+            <Modal.Title>Modal heading</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <h4>Add a Password</h4>
+            <AddPasswordForm/>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={this.close}>Close</Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+    )
+  },
+
+  getInitialState() {
+    return { showModal: false };
+  },
+
+  close() {
+    this.setState({ showModal: false });
+  },
+
+  open() {
+    this.setState({ showModal: true });
+  },
+})
+
+const PasswordTable = React.createClass({
   render: function() {
     return (
       <div>
-        <SearchBar />
-        <PasswordTable passwords={this.props.passwords} />
+        <h1>Password App</h1>
+        <AddPasswordButton />
+        <Table passwords={this.props.passwords} />
       </div>
     )
   }
 })
-ipcRenderer.send('indexRender')
+
+// When we receive server data
 ipcRenderer.on('indexRender', function(event, passwords) {
-  console.log("server response!")
+  console.log(passwords)
   ReactDOM.render(
-    <FilterablePasswordTable passwords={passwords} />,
+    <PasswordTable passwords={passwords} />,
     document.getElementById('react-index')
   )
 })
+
+// Send a request to get server data
+ipcRenderer.send('indexRender')
