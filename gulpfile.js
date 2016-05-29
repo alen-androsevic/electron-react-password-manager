@@ -1,9 +1,16 @@
 'use strict'
 
-const webpack = require('gulp-webpack')
+const gulpWebpack  = require('gulp-webpack')
+const webpack = require('webpack')
 const gulp = require('gulp')
 const gcb = require('gulp-callback')
+const concat = require('gulp-concat')
+const rename = require('gulp-rename')
+const uglify = require('gulp-uglify')
+const ignore = require('gulp-ignore')
+const gulpUtil = require('gulp-util')
 const electron = require('electron-connect').server.create()
+
 const first = true
 
 electron.start()
@@ -27,8 +34,18 @@ gulp.task('serve', function() {
 })
 
 const restart = () => {
+  gulp.src(['inc/js/src/!/*.js', 'inc/js/src/*.js'])
+      .pipe(uglify().on('error', gulpUtil.log))
+      .pipe(concat('main.js'))
+      .pipe(ignore.exclude(['**/*.map']))
+      .pipe(gulp.dest('inc/js/build'))
+      .pipe(rename('main.min.js'))
+      .pipe(uglify())
+      .pipe(gulp.dest('inc/js/build'))
+
+
   gulp.src('inc/react/src/entry.js')
-  .pipe(webpack({
+  .pipe(gulpWebpack({
       module: {
         loaders: [
           {

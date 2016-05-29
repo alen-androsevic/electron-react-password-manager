@@ -49,19 +49,29 @@
 	var React = __webpack_require__(1);
 	var ReactDOM = __webpack_require__(38);
 
-	var Entry = React.createClass({
-	  displayName: 'Entry',
+	var Create = React.createClass({
+	  displayName: 'Create',
 
+	  getInitialState: function () {
+	    return {
+	      value: 'Hello!'
+	    };
+	  },
+	  handleChange: function (event) {
+	    this.setState({
+	      value: event.target.value
+	    });
+	  },
 	  render: function () {
-	    return React.createElement(
-	      'div',
-	      { className: 'myDiv' },
-	      'Hello Electron :D'
-	    );
+	    return React.createElement('input', {
+	      type: 'text',
+	      value: this.state.value,
+	      onChange: this.handleChange
+	    });
 	  }
 	});
 
-	ReactDOM.render(React.createElement(Entry, null), document.getElementById('react-root'));
+	ReactDOM.render(React.createElement(Create, null), document.getElementById('react-create'));
 
 /***/ },
 /* 1 */
