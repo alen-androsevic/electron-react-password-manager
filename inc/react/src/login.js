@@ -36,7 +36,7 @@ const LoginAccount = React.createClass({
   },
 
   render: function() {
-    return(
+    return (
       <form onSubmit={this.handleSubmit}>
         <h2>Please log in</h2>
         <FormGroup controlId='formControlsPassword'>
@@ -48,7 +48,7 @@ const LoginAccount = React.createClass({
         </Button>
       </form>
     )
-  }
+  },
 })
 ipcRenderer.send('requestEncryption')
 ipcRenderer.on('requestEncryption', function(event, enc) {

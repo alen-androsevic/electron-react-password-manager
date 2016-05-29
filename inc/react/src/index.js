@@ -17,7 +17,7 @@ const PasswordRow = React.createClass({
   render: function() {
     // TODO: maak dit af, auto hidden van wachtwoord met sterretjes
     // const password = "***"
-    return(
+    return (
       <tr>
         <td>{this.props.password.service}</td>
         <td>{this.props.password.email}</td>
@@ -48,7 +48,7 @@ const TableCreate = React.createClass({
       rows.push(<PasswordRow password={password} key={password.id} />)
       lastCategory = password.category
     })
-    return(
+    return (
       <Table striped bordered condensed hover responsive>
         <thead>
           <tr>
@@ -69,9 +69,9 @@ const AddPasswordForm = React.createClass({
   getInitialState() {
     return {
       showModal: false,
-      service: '',
-      email: '',
-      password: '',
+      service:   '',
+      email:     '',
+      password:  '',
     }
   },
   handleServiceChange: function(e){
@@ -86,14 +86,14 @@ const AddPasswordForm = React.createClass({
   handleSubmit: function(e) {
     e.preventDefault()
     var post = {
-      service: this.state.service,
-      email: this.state.email,
+      service:  this.state.service,
+      email:    this.state.email,
       password: this.state.password,
     }
     ipcRenderer.send('addService', post)
   },
   render: function (){
-    return(
+    return (
       <form onSubmit={this.handleSubmit}>
         <FormGroup controlId="formControlsText">
           <ControlLabel>Service</ControlLabel>
@@ -118,7 +118,7 @@ const AddPasswordForm = React.createClass({
 // The add password button
 const AddPasswordButton = React.createClass({
   render: function (){
-    return(
+    return (
       <div>
         <Button onClick={this.open} type="submit">
           Add Password
@@ -157,7 +157,7 @@ const AddPasswordButton = React.createClass({
 // Our main view
 const Main = React.createClass({
   render: function() {
-    return(
+    return (
       <div>
         <h1>Password App</h1>
         <AddPasswordButton />

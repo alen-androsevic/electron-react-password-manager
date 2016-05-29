@@ -2,6 +2,8 @@
 
 *Yay another useless password manager!*
 
+**Frontend not yet finished, but most of the features work**
+
 ## > Installation
 
 *For now until there are builds, you will have to compile it yourself :)*
