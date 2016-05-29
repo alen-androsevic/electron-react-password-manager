@@ -1,6 +1,7 @@
 'use strict'
 
 const electron = require('electron')
+const publicFolder = require('./lib/public.js')
 
 const settings = require('./lib/electron.js').init(electron, (err, data) => {
   if (err)
