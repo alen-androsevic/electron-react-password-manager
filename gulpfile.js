@@ -13,7 +13,7 @@ const electron    = require('electron-connect').server.create()
 const htmlmin     = require('gulp-htmlmin')
 const async       = require('async')
 
-const debounceDelay = {debounceDelay: 8000}
+const debounceDelay = {debounceDelay: 2000}
 
 gulp.task('default', function() {
 
