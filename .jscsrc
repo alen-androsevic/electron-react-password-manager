@@ -10,5 +10,6 @@
     "requireCapitalizedConstructors": false,
     "requireNewlineBeforeSingleStatementsInIf": true,
     "requirePaddingNewLinesAfterBlocks": true,
-    "disallowSemicolons": true
+    "disallowSemicolons": true,
+    "requireSpaceBeforeKeywords": true
 }
