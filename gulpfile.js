@@ -157,30 +157,22 @@ const buildAllReact = cb => {
 const rebuildAll = cb => {
   async.parallel({
     html: callback => {
-      console.log("html rebuilding..")
       buildHtml(() =>  {
-        console.log("html done..")
         callback()
       })
     },
     js: callback => {
-      console.log("js rebuilding..")
       buildJs(() =>  {
-        console.log("js done..")
         callback()
       })
     },
     css: callback => {
-      console.log("css rebuilding..")
       buildCss(() =>  {
-        console.log("css done..")
         callback()
       })
     },
     buildAllReact: callback => {
-      console.log("react rebuilding..")
       buildAllReact(() =>  {
-        console.log("react done..")
         if (cb)
           cb()
       })

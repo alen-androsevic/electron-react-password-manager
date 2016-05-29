@@ -21,7 +21,6 @@
 
 ## > Showcase
 
-![](http://i.imgur.com/XORDoWr.png)
-![](http://i.imgur.com/0ow16rx.png)
-![](http://i.imgur.com/X3pq7Yk.png)
-![](http://i.imgur.com/GjegILZ.png)
+![](http://i.imgur.com/yJsAW7u.png)
+![](http://i.imgur.com/x87128U.png)
+![](http://i.imgur.com/GECgz3D.png)
