@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Electron App</title>
+  <link rel="stylesheet" href="http://127.0.0.1:9420/css/build/main.min.css">
+</head>
+<body>
+  <div id="react-index"></div>
+
+  <script type="text/javascript">
+    'use strict'
+
+    window.$ = window.jQuery = require('../../js/src/!/jquery.js')
+    const {ipcRenderer} = require('electron')
+  </script>
+  <script src="http://127.0.0.1:9420/react/build/index.js"></script>
+  <script src="http://127.0.0.1:9420/js/build/main.min.js"></script>
+</body>
+</html>

@@ -5,3 +5,4 @@ node_modules
 /inc/js/build
 /inc/css/build
 /inc/react/build
+/inc/html/build

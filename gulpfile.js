@@ -10,13 +10,14 @@ const ignore      = require('gulp-ignore')
 const gulpUtil    = require('gulp-util')
 const minifyCSS   = require('gulp-minify-css')
 const electron    = require('electron-connect').server.create()
+const htmlmin       = require('gulp-htmlmin')
 
 gulp.task('default', function() {
   // Watch for changes in these files
   gulp.watch([
     'inc/css/src/*',
     'inc/js/src/*',
-    'inc/html/*',
+    'inc/html/src/*',
     'inc/react/src/*',
     'lib/*',
     'lib/*/**',
@@ -59,6 +60,13 @@ const buildReact = (file, cb) => {
   }))
 }
 
+// How we build the html
+const buildHtml = cb => {
+  gulp.src('inc/html/src/**/*.html')
+    .pipe(htmlmin({collapseWhitespace: true}))
+    .pipe(gulp.dest('inc/html/build'))
+}
+
 // How we build the css
 const buildCss = cb => {
   gulp.src('inc/css/src/**/*.css')
@@ -74,21 +82,22 @@ const buildCss = cb => {
 // How we build the javascript
 const buildJs = cb => {
   gulp.src(['inc/js/src/!/*.js', 'inc/js/src/*.js'])
-  .pipe(uglify().on('error', gulpUtil.log))
-  .pipe(concat('main.js'))
-  .pipe(ignore.exclude(['**/*.map']))
-  .pipe(gulp.dest('inc/js/build'))
-  .pipe(rename('main.min.js'))
-  .pipe(uglify())
-  .pipe(gulp.dest('inc/js/build'))
-  .pipe(gcb(() => {
-    if (cb)
-      cb()
-  }))
+    .pipe(uglify().on('error', gulpUtil.log))
+    .pipe(concat('main.js'))
+    .pipe(ignore.exclude(['**/*.map']))
+    .pipe(gulp.dest('inc/js/build'))
+    .pipe(rename('main.min.js'))
+    .pipe(uglify())
+    .pipe(gulp.dest('inc/js/build'))
+    .pipe(gcb(() => {
+      if (cb)
+        cb()
+    }))
 }
 
 // How we rebuild all
 const rebuildAll = cb => {
+  buildHtml() // No need to show when done, so fast.
   buildJs(() => {
     console.log('Javascript build complete')
     buildCss(() => {
