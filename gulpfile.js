@@ -13,10 +13,11 @@ const electron    = require('electron-connect').server.create()
 const htmlmin     = require('gulp-htmlmin')
 const async       = require('async')
 const timer       = require('./lib/timer')
+const fs          = require('fs')
 
 const debounceDelay = {debounceDelay: 2000}
 
-gulp.task('default', function() {
+gulp.task('default', () => {
   gulp.watch([
     'lib/*',
     'lib/*/**',
@@ -68,6 +69,7 @@ gulp.task('default', function() {
 // How we build React
 const buildReact = (file, cb) => {
   let time = new timer()
+
   gulp.src('inc/react/src/' + file + '.js')
   .pipe(gulpWebpack({
       module: {
@@ -89,7 +91,7 @@ const buildReact = (file, cb) => {
   ))
   .pipe(gulp.dest('inc/react/build/'))
   .pipe(gcb(() => {
-    console.log('buildReact(\'' + file + '\') task complete: ' + time.stop() + 'ms')
+    console.log('buildReact(' + file + ') task complete: ' + time.stop() + 'ms')
     cb()
   }))
 }
@@ -97,6 +99,7 @@ const buildReact = (file, cb) => {
 // How we build the html
 const buildHtml = cb => {
   let time = new timer()
+
   gulp.src('inc/html/src/**/*.html')
     .pipe(htmlmin({collapseWhitespace: true}))
     .pipe(gulp.dest('inc/html/build'))
@@ -106,6 +109,7 @@ const buildHtml = cb => {
 // How we build the css
 const buildCss = cb => {
   let time = new timer()
+
   gulp.src('inc/css/src/**/*.css')
     .pipe(minifyCSS())
     .pipe(concat('main.min.css'))
@@ -120,6 +124,7 @@ const buildCss = cb => {
 // How we build the javascript
 const buildJs = cb => {
   let time = new timer()
+
   gulp.src(['inc/js/src/!/*.js', 'inc/js/src/*.js'])
     .pipe(uglify().on('error', gulpUtil.log))
     .pipe(concat('main.js'))
@@ -138,34 +143,37 @@ const buildJs = cb => {
 // How we build all react files
 const buildAllReact = cb => {
   let time = new timer()
-  async.parallel({
-    create: function(callback){
-      buildReact('create', () => {
-        callback()
-      })
-    },
-    index: function(callback){
-      buildReact('index', () => {
-        callback()
-      })
-    },
-    login: function(callback){
-      buildReact('login', () =>  {
-        callback()
-      })
+
+  // First we get the files to transpile
+  let reactFiles = {}
+  let files = fs.readdirSync('inc/react/src/')
+  for (let i in files) {
+    let name = 'inc/react/src/' + files[i]
+    let file = name.split('/')[name.split('/').length-1].split('.')[0]
+    reactFiles[i] = {
+      file,
     }
-  },
-  function(err, results) {
-    if (err) throw new Error(err)
-    console.log('RebuildAllReact task complete: ' + time.stop() + 'ms')
-    if (cb)
-      cb()
-  });
+  }
+
+  // Then we transpile them in async
+  async.forEachOf(reactFiles, (value, key, callback) => {
+    buildReact(value.file, () => {
+      callback()
+    })
+  }, err => {
+      if (err)
+        throw new Error(err)
+
+      console.log('RebuildAllReact task complete: ' + time.stop() + 'ms')
+      if (cb)
+        cb()
+  })
 }
 
 // How we rebuild all
 const rebuildAll = cb => {
   let time = new timer()
+
   async.parallel({
     html: callback => {
       buildHtml(() =>  {
