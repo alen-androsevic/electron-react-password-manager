@@ -12,11 +12,11 @@ const minifyCSS   = require('gulp-minify-css')
 const electron    = require('electron-connect').server.create()
 const htmlmin     = require('gulp-htmlmin')
 const async       = require('async')
+const timer       = require('./lib/timer')
 
 const debounceDelay = {debounceDelay: 2000}
 
 gulp.task('default', function() {
-
   gulp.watch([
     'lib/*',
     'lib/*/**',
@@ -67,6 +67,7 @@ gulp.task('default', function() {
 
 // How we build React
 const buildReact = (file, cb) => {
+  let time = new timer()
   gulp.src('inc/react/src/' + file + '.js')
   .pipe(gulpWebpack({
       module: {
@@ -88,24 +89,29 @@ const buildReact = (file, cb) => {
   ))
   .pipe(gulp.dest('inc/react/build/'))
   .pipe(gcb(() => {
+    console.log('buildReact(\'' + file + '\') task complete: ' + time.stop() + 'ms')
     cb()
   }))
 }
 
 // How we build the html
 const buildHtml = cb => {
+  let time = new timer()
   gulp.src('inc/html/src/**/*.html')
     .pipe(htmlmin({collapseWhitespace: true}))
     .pipe(gulp.dest('inc/html/build'))
+  console.log('buildHtml task complete: ' + time.stop() + 'ms')
 }
 
 // How we build the css
 const buildCss = cb => {
+  let time = new timer()
   gulp.src('inc/css/src/**/*.css')
     .pipe(minifyCSS())
     .pipe(concat('main.min.css'))
     .pipe(gulp.dest('inc/css/build'))
     .pipe(gcb(() => {
+      console.log('BuildCss task complete: ' + time.stop() + 'ms')
       if (cb)
         cb()
     }))
@@ -113,6 +119,7 @@ const buildCss = cb => {
 
 // How we build the javascript
 const buildJs = cb => {
+  let time = new timer()
   gulp.src(['inc/js/src/!/*.js', 'inc/js/src/*.js'])
     .pipe(uglify().on('error', gulpUtil.log))
     .pipe(concat('main.js'))
@@ -122,6 +129,7 @@ const buildJs = cb => {
     .pipe(uglify())
     .pipe(gulp.dest('inc/js/build'))
     .pipe(gcb(() => {
+      console.log('BuildJs task complete: ' + time.stop() + 'ms')
       if (cb)
         cb()
     }))
@@ -129,6 +137,7 @@ const buildJs = cb => {
 
 // How we build all react files
 const buildAllReact = cb => {
+  let time = new timer()
   async.parallel({
     create: function(callback){
       buildReact('create', () => {
@@ -148,6 +157,7 @@ const buildAllReact = cb => {
   },
   function(err, results) {
     if (err) throw new Error(err)
+    console.log('RebuildAllReact task complete: ' + time.stop() + 'ms')
     if (cb)
       cb()
   });
@@ -155,6 +165,7 @@ const buildAllReact = cb => {
 
 // How we rebuild all
 const rebuildAll = cb => {
+  let time = new timer()
   async.parallel({
     html: callback => {
       buildHtml(() =>  {
@@ -173,6 +184,7 @@ const rebuildAll = cb => {
     },
     buildAllReact: callback => {
       buildAllReact(() =>  {
+        console.log('rebuildAll task complete: ' + time.stop() + 'ms')
         if (cb)
           cb()
       })
