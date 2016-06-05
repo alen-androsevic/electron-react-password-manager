@@ -11,7 +11,7 @@
     "url": "git+https://michaeldegroot@bitbucket.org/michaeldegroot/passapp.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "gulp": "^3.9.1",
     "gulp-electron": "^0.1.3",
