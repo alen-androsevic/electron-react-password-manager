@@ -8,11 +8,7 @@
 
 ### Downloads
 
--   [win32-x64](kappa)
--   [win32-ia32](kappa)
--   [linux-ia32](kappa)
--   [linux-x64](kappa)
--   [darwin-x64](kappa)
+#### [Binaries](https://github.com/michaeldegroot/electron-react-password-manager/releases)
 
 **After download:**
  *Unzip contents somewhere and run the executable, easy as that.*
