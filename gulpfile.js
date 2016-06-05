@@ -1,7 +1,7 @@
 'use strict'
 
 const gulp         = require('gulp')
-const packageJson  = require('./src/package.json')
+const packageJson  = require('./package.json')
 const gulpElectron = require('gulp-electron')
 const rimraf       = require('rimraf')
 
