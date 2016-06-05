@@ -7,10 +7,6 @@
     "start": "electron main.js",
     "build": "./node_modules/.bin/webpack"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://michaeldegroot@bitbucket.org/michaeldegroot/passapp.git"
-  },
   "keywords": [
     "Electron",
     "React",
@@ -54,8 +50,6 @@
     "notification-shim": "^0.1.1",
     "pbkdf2": "^3.0.4",
     "react-bootstrap": "^0.29.4",
-    "reactable": "^0.13.2",
-    "serve-static": "^1.10.2",
-    "tcp-port-used": "^0.1.2"
+    "reactable": "^0.13.2"
   }
 }
