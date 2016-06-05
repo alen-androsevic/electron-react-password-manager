@@ -1,6 +1,6 @@
 'use strict'
 
-const electron = require 'electron'
+const electron = require('electron')
 
 const settings = require('./lib/electron.js').init(electron, (err, data) => {
   if (err)
