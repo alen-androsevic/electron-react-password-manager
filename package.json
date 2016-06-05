@@ -50,6 +50,7 @@
     "finalhandler": "^0.4.1",
     "fs-extra": "^0.30.0",
     "js-base64": "^2.1.9",
+    "moment": "^2.13.0",
     "node-notifier": "^4.5.0",
     "nosqlite": "^0.2.2",
     "notification-shim": "^0.1.1",
