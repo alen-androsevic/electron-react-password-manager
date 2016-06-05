@@ -15,7 +15,7 @@ gulp.task('default', () => {
       cache:       './cache',
       version:     'v0.37.6',
       packaging:   true,
-      platforms:   ['win32-ia32', 'win32-x64'],
+      platforms:   ['win32-ia32', 'win32-x64', 'linux-ia32', 'linux-x64', 'darwin-x64'],
       platformResources: {
         darwin: {
           CFBundleDisplayName: packageJson.name,
