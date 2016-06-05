@@ -12,6 +12,10 @@ const ControlLabel   = require('react-bootstrap').ControlLabel
 const FormControl    = require('react-bootstrap').FormControl
 const Table          = require('react-bootstrap').Table
 
+exports.kappa = () => {
+  console.log("kappa")
+}
+
 // Each table row
 const PasswordRow = React.createClass({
   render: function() {
@@ -125,8 +129,8 @@ const AddPasswordButton = React.createClass({
         </Button>
 
         <Modal id="createPasswordModal" show={this.state.showModal} onHide={this.close}>
-          <Modal.Header closeButton>
-            <Modal.Title>Modal heading</Modal.Title>
+          <Modal.Header>
+            <Modal.Title>Add a service</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <h4>Add a Password</h4>
@@ -169,7 +173,6 @@ const Main = React.createClass({
 
 // When we receive server data
 ipcRenderer.on('indexRender', function(event, passwords) {
-  console.log(passwords)
   ReactDOM.render(
     <Main passwords={passwords} />,
     document.getElementById('react-index')

@@ -44,7 +44,6 @@ const CreateAccount = React.createClass({
   handleSubmit: function(e) {
     e.preventDefault()
 
-    // TODO: make the bits and pbkd2f iterations and count dynamic
     if (this.state.hashing == 1) {
       var pbkd2f = {
         iterations: 100000,

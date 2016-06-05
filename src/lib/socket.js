@@ -4,6 +4,7 @@ const crypto = require('./crypto')
 const events = require('./events')
 const timer  = require('./timer')
 const chkErr = require('./error').chkErr
+const mkdirp = require('mkdirp')
 
 let electron
 let callbackError
@@ -111,14 +112,16 @@ exports.createIfNotExists = db => {
       }
     } else {
       electron.firstTime = true
-      db.create((err) => {
-        chkErr(err, callbackError)
-        if (db.name === 'salt') {
-          // First time the salt database has been created, lets populate it with a super salt from crypto
-          db.post({salt: crypto.generateSalt()}, (err, data) => {
-            chkErr(err, callbackError)
-          })
-        }
+      mkdirp('./db', err => {
+        db.create((err) => {
+          chkErr(err, callbackError)
+          if (db.name === 'salt') {
+            // First time the salt database has been created, lets populate it with a super salt from crypto
+            db.post({salt: crypto.generateSalt()}, (err, data) => {
+              chkErr(err, callbackError)
+            })
+          }
+        })
       })
     }
   })

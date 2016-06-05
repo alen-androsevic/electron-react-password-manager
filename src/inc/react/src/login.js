@@ -50,6 +50,7 @@ const LoginAccount = React.createClass({
     )
   },
 })
+
 ipcRenderer.send('requestEncryption')
 ipcRenderer.on('requestEncryption', function(event, enc) {
   encryption = enc

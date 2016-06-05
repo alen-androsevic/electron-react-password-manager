@@ -1,9 +1,9 @@
 'use strict'
 
-const connection = new(require('nosqlite').Connection)('./inc/db')
+const connection = new(require('nosqlite').Connection)('./db')
 
 exports.init = electron => {
-  electron.dev = true
+  electron.dev = false
 
   electron.crypt = {
     bits: 2048,

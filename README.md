@@ -2,13 +2,28 @@
 
 *Yay another useless password manager!*
 
-**Frontend not yet finished, but most of the features work**
+**Frontend needs some love, but it all works**
 
 ## > Installation
 
-*For now until there are builds, you will have to compile it yourself :)*
+### Downloads
 
+-   [win32-x64](kappa)
+-   [win32-ia32](kappa)
+-   [linux-ia32](kappa)
+-   [linux-x64](kappa)
+-   [darwin-x64](kappa)
+
+**After download:**
+ *Unzip contents somewhere and run the executable, easy as that.*
+
+### Development
+
+-   `cd src`
 -   `gulp`
+
+*Every time you change files in the src folder;*
+*gulp will transpile, minify, concat or restart the process for you*
 
 ## > Features
 
