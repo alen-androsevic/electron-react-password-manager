@@ -1,9 +1,10 @@
 'use strict'
 
-const cryptico  = require('cryptico')
-const base64    = require('js-base64').Base64
-const pbkd2f    = require('pbkdf2')
-const timer     = require('./timer')
+const cryptico = require('cryptico')
+const base64   = require('js-base64').Base64
+const pbkd2f   = require('pbkdf2')
+const timer    = require('./timer')
+const spawn    = require('threads').spawn
 
 let electron
 
@@ -17,7 +18,7 @@ exports.generateSalt = () => {
 }
 
 // Generates the encryption keys used to decrypt and encrypt everything
-exports.generateKey = passphrase => {
+exports.generateKey = (passphrase, cb) => {
   let time
   let Totaltime = new timer()
 
@@ -33,22 +34,60 @@ exports.generateKey = passphrase => {
   electron.log('Application salt(' + salt.length + ')')
 
   // Build the hash
-  time     = new timer()
-  let hash = pbkd2f.pbkdf2Sync(passphrase, salt, iterations, len, 'sha512')
-  hash     = base64.encode(hash.toString('hex'))
-  electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
+  time = new timer()
+  exports.buildHash(passphrase, salt, iterations, len, 'sha512', (hash) => {
+    electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
 
-  // Generate the RSA
-  time      = new timer()
-  const rsa = exports.generateRsa(hash)
-  const pub = exports.generatePublic(rsa)
-  electron.log('RSA key complete: ' + time.stop() + 'ms')
-  electron.log('Key generation complete: ' + Totaltime.stop() + 'ms total')
+    // Generate the RSA
+    time      = new timer()
+    exports.generateRSA(hash, RSAresults => {
+      electron.log('RSA key complete: ' + time.stop() + 'ms')
+      electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
 
-  electron.encryption = {
-    rsa: rsa,
-    pub: pub,
-  }
+      electron.encryption = {
+        rsa: RSAresults.rsa,
+        pub: RSAresults.pub,
+      }
+      cb()
+    })
+  })
+}
+
+exports.generateRSA = (hash, cb) => {
+  const thread = spawn(function(input, done) {
+    const cryptico = require('cryptico')
+    const rsa = cryptico.generateRSAKey(input.hash, input.electron.crypt.bits)
+    const pub = cryptico.publicKeyString(rsa)
+    done({rsa, pub})
+  })
+
+  thread.send({electron, hash})
+  .on('message', function(response) {
+    cb({rsa: response.rsa, pub: response.pub})
+    thread.kill()
+  })
+  .on('error', function(error) {
+    console.error('Worker errored:', error)
+  })
+}
+
+exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
+  const thread = spawn(function(input, done) {
+    const base64 = require('js-base64').Base64
+    const pbkd2f = require('pbkdf2')
+    let hash     = pbkd2f.pbkdf2Sync(input.passphrase, input.salt, input.iterations, input.len, input.hashmethod)
+    hash         = base64.encode(hash.toString('hex'))
+    done({hash})
+  })
+
+  thread.send({passphrase, salt, iterations, len, hashmethod})
+  .on('message', function(response) {
+    cb(response.hash)
+    thread.kill()
+  })
+  .on('error', function(error) {
+    console.error('Worker errored:', error)
+  })
 }
 
 // Can generate 'super' salts (random characters) from all character codes

@@ -153,30 +153,30 @@ exports.getPasswords = cb => {
 
 exports.loginContinue = (event, data) => {
   // Generate rsa and pub
-  crypto.generateKey(data.pass)
+  crypto.generateKey(data.pass, () => {
+    data = null // Attempt to null it out of memory :P?
 
-  data = null // Attempt to null it out of memory :P?
-
-  let firstResult = electron.db.passwords.allSync()
-
-  // Check if new account
-  if (firstResult.length == 0) {
-    exports.sendMsg(event, true, 'Account created, logging in.')
-    events.loadPage('index')
-    return // Stop because no results
-  }
-
-  // Decrypt one password to check if password is correct
-  firstResult = firstResult[0]
-  crypto.decryptString(firstResult.password, electron.encryption.rsa, (err, decrypted) => {
-    chkErr(err, callbackError)
-    if (decrypted === '�w^~)�') { // For some reason a failed password is    �w^~)�    why? base64?
-      exports.sendMsg(event, false, 'Wrong password!')
-      return // Stop because string is still encrypted
+    let firstResult = electron.db.passwords.allSync()
+  
+    // Check if new account
+    if (firstResult.length == 0) {
+      exports.sendMsg(event, true, 'Account created, logging in.')
+      events.loadPage('index')
+      return // Stop because no results
     }
 
-    exports.sendMsg(event, true, 'Login succeeded, please wait..')
-    events.loadPage('index')
+    // Decrypt one password to check if password is correct
+    firstResult = firstResult[0]
+    crypto.decryptString(firstResult.password, electron.encryption.rsa, (err, decrypted) => {
+      chkErr(err, callbackError)
+      if (decrypted === '�w^~)�') { // For some reason a failed password is    �w^~)�    why? base64?
+        exports.sendMsg(event, false, 'Wrong password!')
+        return // Stop because string is still encrypted
+      }
+
+      exports.sendMsg(event, true, 'Login succeeded, please wait..')
+      events.loadPage('index')
+    })
   })
 }
 
