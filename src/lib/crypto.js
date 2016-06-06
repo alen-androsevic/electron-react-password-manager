@@ -33,12 +33,12 @@ exports.generateKey = (passphrase, cb) => {
   electron.log('pbkd2f length: ' + len)
   electron.log('Application salt(' + salt.length + ')')
 
-  // Build the hash
+  // Build the hash in a thead
   time = new timer()
   exports.buildHash(passphrase, salt, iterations, len, 'sha512', (hash) => {
     electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
 
-    // Generate the RSA
+    // Generate the RSA in a thead
     time      = new timer()
     exports.generateRSA(hash, RSAresults => {
       electron.log('RSA key complete: ' + time.stop() + 'ms')
@@ -48,11 +48,13 @@ exports.generateKey = (passphrase, cb) => {
         rsa: RSAresults.rsa,
         pub: RSAresults.pub,
       }
+
       cb()
     })
   })
 }
 
+// The generateRSA function running in a thread
 exports.generateRSA = (hash, cb) => {
   const thread = spawn(function(input, done) {
     const cryptico = require('cryptico')
@@ -71,6 +73,7 @@ exports.generateRSA = (hash, cb) => {
   })
 }
 
+// The build hash function running in a thread
 exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
   const thread = spawn(function(input, done) {
     const base64 = require('js-base64').Base64
