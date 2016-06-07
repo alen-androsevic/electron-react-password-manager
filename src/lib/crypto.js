@@ -1,6 +1,6 @@
 'use strict'
 
-const cryptico = require('cryptico')
+const cryptico = require('cryptico-js')
 const base64   = require('js-base64').Base64
 const pbkd2f   = require('pbkdf2')
 const timer    = require('./timer')
@@ -39,11 +39,10 @@ exports.generateKey = (passphrase, cb) => {
     electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
 
     // Generate the RSA in a thead
-    time      = new timer()
+    time = new timer()
     exports.generateRSA(hash, RSAresults => {
       electron.log('RSA key complete: ' + time.stop() + 'ms')
       electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
-
       electron.encryption = {
         rsa: RSAresults.rsa,
         pub: RSAresults.pub,
@@ -56,6 +55,7 @@ exports.generateKey = (passphrase, cb) => {
 
 // The generateRSA function running in a thread
 exports.generateRSA = (hash, cb) => {
+  // TODO: find a way to make this work in threads
   const thread = spawn(function(input, done) {
     const cryptico = require('cryptico')
     const rsa = cryptico.generateRSAKey(input.hash, input.electron.crypt.bits)
@@ -69,7 +69,7 @@ exports.generateRSA = (hash, cb) => {
     thread.kill()
   })
   .on('error', function(error) {
-    console.error('Worker errored:', error)
+    throw new Error('Worker errored:', error)
   })
 }
 
@@ -79,7 +79,7 @@ exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
     const base64 = require('js-base64').Base64
     const pbkd2f = require('pbkdf2')
     let hash     = pbkd2f.pbkdf2Sync(input.passphrase, input.salt, input.iterations, input.len, input.hashmethod)
-    hash         = base64.encode(hash.toString('hex'))
+    hash         = hash.toString('hex')
     done({hash})
   })
 
@@ -88,8 +88,8 @@ exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
     cb(response.hash)
     thread.kill()
   })
-  .on('error', function(error) {
-    console.error('Worker errored:', error)
+  .on('error', function(err) {
+    throw new Error(err)
   })
 }
 
@@ -102,28 +102,45 @@ exports.generateSuperSalt = (amount, maxpos) => {
   return salt
 }
 
-// Using cryptico to generate RSA key
-exports.generateRsa = input => {
-  return cryptico.generateRSAKey(input, electron.crypt.bits)
-}
-
-// Using cryptico to generate public key from RSA
-exports.generatePublic = input => {
-  return cryptico.publicKeyString(input)
-}
-
-// Using cryptico to encrypt strings
+// Using cryptico to encrypt strings in a thread
 exports.encryptString = (string, publickey, cb) => {
-  let encrypted = cryptico.encrypt(base64.encode(string), publickey)
-  if (encrypted)
-    if (encrypted.status)
-      if (encrypted.status == 'Invalid public key')
-        cb(encrypted.status)
-  cb(null, encrypted.cipher)
+  const thread = spawn(function(input, done) {
+    const cryptico = require('cryptico')
+    const base64   = require('js-base64').Base64
+    let encrypted = cryptico.encrypt(base64.encode(input.string), input.publickey)
+    done({encrypted})
+  })
+
+  thread.send({string, publickey})
+  .on('message', function(response) {
+    if (response.encrypted)
+      if (response.encrypted.status)
+        if (response.encrypted.status == 'Invalid public key')
+          cb(response.encrypted.status)
+    cb(null, response.encrypted.cipher)
+    thread.kill()
+  })
+  .on('error', function(err) {
+    throw new Error(err)
+  })
 }
 
-// Using cryptico to decrypt strings
+// Using cryptico to decrypt strings in a thread
 exports.decryptString = (string, privatekey, cb) => {
+  const cryptico = require('cryptico')
   let decrypted = cryptico.decrypt(string, privatekey)
-  cb(null, base64.decode(decrypted.plaintext))
+  const thread = spawn(function(input, done) {
+    const cryptico = require('cryptico')
+    let decrypted = cryptico.decrypt(input.string, input.privatekey)
+    done({hash})
+  })
+
+  thread.send({string, privatekey})
+  .on('message', function(response) {
+    cb(null, base64.decode(response.plaintext))
+    thread.kill()
+  })
+  .on('error', function(err) {
+    throw new Error(err)
+  })
 }

@@ -157,7 +157,7 @@ exports.loginContinue = (event, data) => {
     data = null // Attempt to null it out of memory :P?
 
     let firstResult = electron.db.passwords.allSync()
-  
+
     // Check if new account
     if (firstResult.length == 0) {
       exports.sendMsg(event, true, 'Account created, logging in.')
