@@ -1,6 +1,6 @@
 {
-  "name": "PassApp Container",
-  "main": "main.js",
+  "name": "PassApp-Container",
+  "main": "gulpfile.js",
   "repository": {
     "type": "git",
     "url": "git+https://michaeldegroot@bitbucket.org/michaeldegroot/passapp.git"
