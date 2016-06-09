@@ -40,41 +40,16 @@ exports.generateKey = (passphrase, cb) => {
 
     // Generate the RSA in a thead
     time = new timer()
-    exports.generateRSA(hash, RSAresults => {
-      electron.log('RSA key complete: ' + time.stop() + 'ms')
-      electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
-      electron.encryption = {
-        rsa: RSAresults.rsa,
-        pub: RSAresults.pub,
-      }
-
-      cb()
-    })
-  })
-}
-
-// The generateRSA function running in a thread
-exports.generateRSA = (hash, cb) => {
-  // TODO: find a way to make this work in threads
-  const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
-  const pub = cryptico.publicKeyString(rsa)
-  cb({rsa: rsa, pub: pub})
-  return // Until its fixed, stop executing
-
-  const thread = spawn(function(input, done) {
-    const cryptico = require('cryptico')
-    const rsa = cryptico.generateRSAKey(input.hash, input.electron.crypt.bits)
+    const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
     const pub = cryptico.publicKeyString(rsa)
-    done({rsa, pub})
-  })
+    electron.log('RSA key complete: ' + time.stop() + 'ms')
+    electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
+    electron.encryption = {
+      rsa: rsa,
+      pub: pub,
+    }
 
-  thread.send({electron, hash})
-  .on('message', function(response) {
-    cb({rsa: response.rsa, pub: response.pub})
-    thread.kill()
-  })
-  .on('error', function(error) {
-    throw new Error('Worker errored:', error)
+    cb()
   })
 }
 
