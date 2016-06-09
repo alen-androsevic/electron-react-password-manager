@@ -56,6 +56,11 @@ exports.generateKey = (passphrase, cb) => {
 // The generateRSA function running in a thread
 exports.generateRSA = (hash, cb) => {
   // TODO: find a way to make this work in threads
+  const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
+  const pub = cryptico.publicKeyString(rsa)
+  cb({rsa: rsa, pub: pub})
+  return // Until its fixed, stop executing
+
   const thread = spawn(function(input, done) {
     const cryptico = require('cryptico')
     const rsa = cryptico.generateRSAKey(input.hash, input.electron.crypt.bits)
@@ -125,22 +130,8 @@ exports.encryptString = (string, publickey, cb) => {
   })
 }
 
-// Using cryptico to decrypt strings in a thread
+// Using cryptico to decrypt strings
 exports.decryptString = (string, privatekey, cb) => {
-  const cryptico = require('cryptico')
   let decrypted = cryptico.decrypt(string, privatekey)
-  const thread = spawn(function(input, done) {
-    const cryptico = require('cryptico')
-    let decrypted = cryptico.decrypt(input.string, input.privatekey)
-    done({hash})
-  })
-
-  thread.send({string, privatekey})
-  .on('message', function(response) {
-    cb(null, base64.decode(response.plaintext))
-    thread.kill()
-  })
-  .on('error', function(err) {
-    throw new Error(err)
-  })
+  cb(null, base64.decode(decrypted.plaintext))
 }
