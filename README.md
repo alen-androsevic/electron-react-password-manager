@@ -32,6 +32,7 @@
 -   Stores only passwords encrypted, to save time for decryption :)
 -   No accounts just a password you come up with to rule them all
 -   Your password is your passphrase for your encryption key
+-   All of your data is stored **CLIENT** sided, **NO** server storage!
 
 ## > Flowchart
 ![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart.jpg)
