@@ -33,7 +33,7 @@ exports.generateKey = (passphrase, cb) => {
     electron.log('Pepper Hash (' + pepper.length + ')')
     electron.log('Pepper + Passphrase + Salt Hashed (' + peppersaltpass.length + ')')
 
-    crypto.pbkdf2(passphrase, peppersaltpass, iterations, len, 'sha512', (err, hash) => {
+    crypto.pbkdf2(passphrase, peppersaltpass, iterations, 16, 'sha512', (err, hash) => {
       if (err)
         throw err
 
@@ -53,23 +53,56 @@ exports.generatePepper = cb => {
   })
 }
 
-// Cryptographically secure pseudorandom number generator
+// CSPRNG salt
 exports.generateSalt = () => {
   return crypto.randomBytes(electron.crypt.salt.randomBytes).toString('hex')
 }
 
-// Using crypto to encrypt strings
-exports.encryptString = (string, cb) => {
-  let cipher = crypto.createCipher('aes-' + electron.crypt.bits + '-cbc', electron.hash)
-  let encrypted = cipher.update(string, 'utf8', 'base64')
-  encrypted += cipher.final('base64')
-  cb(null, encrypted)
+// HMAC key generation
+exports.generateHMAC = () => {
+  return crypto.randomBytes(32).toString('hex')
 }
 
 // Using crypto to decrypt strings
 exports.decryptString = (string, cb) => {
-  let decipher = crypto.createDecipher('aes-' + electron.crypt.bits + '-cbc', electron.hash)
-  let decrypted = decipher.update(string, 'base64', 'utf8')
-  decrypted += decipher.final('utf8')
-  cb(null, decrypted)
+  let cipherBlob = string.split('$')
+  let ct = cipherBlob[0]
+  let IV = new Buffer(cipherBlob[1], 'hex')
+  let hmac = cipherBlob[2]
+  let decryptor
+
+  let chmac = crypto.createHmac('sha256', electron.db.salt.allSync()[0].hmac)
+  chmac.update(ct)
+  chmac.update(IV.toString('hex'))
+
+  let val1 = chmac.digest('hex')
+  let val2 = hmac
+
+  if (val1 !== val2) {
+    // TODO: exception: login, create 2 services, exit program, tamper with the last password db file, re-open program: no errors
+    cb('HMAC TAMPER')
+  }
+
+  let hash = crypto.createHash('sha256').update(electron.hash).digest()
+  decryptor = crypto.createDecipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+  decryptor.update(ct, 'hex', 'utf-8')
+  cb(null, decryptor.final('utf-8'))
+}
+
+// Using crypto to encrypt strings
+exports.encryptString = (string, cb) => {
+  let IV = new Buffer(crypto.randomBytes(16)) // Ensure that the IV (initialization vector) is random
+  let cipherText
+  let hmac
+  let encryptor
+  let hash = crypto.createHash('sha256').update(electron.hash).digest()
+  encryptor = crypto.createCipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+  encryptor.setEncoding('hex')
+  encryptor.write(string)
+  encryptor.end()
+  cipherText = encryptor.read()
+  hmac = crypto.createHmac('sha256',  electron.db.salt.allSync()[0].hmac)
+  hmac.update(cipherText)
+  hmac.update(IV.toString('hex'))
+  cb(null, cipherText + '$' + IV.toString('hex') + '$' + hmac.digest('hex'))
 }
