@@ -28,10 +28,10 @@
 -   Random salt for PBKD2F that is generated on first run
 -   Unique computer fingerprint used as a pepper for PBKD2F
 -   up to 400k PBKD2F iterations
--   up to 4096bit RSA passphrase encryption (will take you about 1 minute)
--   Stores only passwords encrypted, to save time for decryption :)
+-   up to 2048bit AES passphrase encryption (aes-256-cbc)
+-   Stores passwords, email and service name encrypted to a local database
 -   No accounts just a password you come up with to rule them all
--   Your password is your passphrase for your encryption key
+-   Your password is your passphrase to unlock all your other passwords
 -   All of your data is stored **CLIENT** sided, **NO** server storage!
 
 ## > Security Flowchart
