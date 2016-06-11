@@ -1,5 +1,6 @@
 'use strict'
 
+const crypto   = require('crypto')
 const cryptico = require('cryptico-js')
 const base64   = require('js-base64').Base64
 const pbkd2f   = require('pbkdf2')
@@ -10,11 +11,6 @@ let electron
 
 exports.init = a => {
   electron = a
-}
-
-// Generates a one time application salt
-exports.generateSalt = () => {
-  return exports.generateSuperSalt(electron.crypt.supersalt.saltLen, electron.crypt.supersalt.maxpos)
 }
 
 // Generates the encryption keys used to decrypt and encrypt everything
@@ -73,13 +69,9 @@ exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
   })
 }
 
-// Can generate 'super' salts (random characters) from all character codes
-exports.generateSuperSalt = (amount, maxpos) => {
-  let salt = ''
-  let chars = ''
-  for (let i = 32; i < maxpos; i++) chars += String.fromCharCode(i)
-  for (let i = 0; i < amount; i++) salt += chars.charAt(Math.floor(Math.random() * chars.length))
-  return salt
+// Cryptographically secure pseudorandom number generator
+exports.generateSalt = () => {
+  return crypto.randomBytes(electron.crypt.salt.randomBytes).toString('hex')
 }
 
 // Using cryptico to encrypt strings in a thread

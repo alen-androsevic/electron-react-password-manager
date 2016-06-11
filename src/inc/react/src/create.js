@@ -47,25 +47,28 @@ const CreateAccount = React.createClass({
     if (this.state.hashing == 1) {
       var pbkd2f = {
         iterations: 100000,
-        count:      140,
+        count:      128,
       }
     }
+
     if (this.state.hashing == 2) {
       var pbkd2f = {
         iterations: 200000,
-        count:      270,
+        count:      256,
       }
     }
+
     if (this.state.hashing == 3) {
       var pbkd2f = {
         iterations: 300000,
-        count:      420,
+        count:      512,
       }
     }
+
     if (this.state.hashing == 4) {
       var pbkd2f = {
         iterations: 400000,
-        count:      560,
+        count:      1024,
       }
     }
 
@@ -73,13 +76,13 @@ const CreateAccount = React.createClass({
       pass:   this.state.passwordone,
       pass2:  this.state.passwordtwo,
       bits:   this.state.encryption,
-      pbkd2f: pbkd2f
+      pbkd2f: pbkd2f,
     })
     this.setState({passwordtwo: '', passwordone: ''})
   },
 
   render: function() {
-    return(
+    return (
       <form onSubmit={this.handleSubmit}>
         <h2>Welcome! Please create a master password</h2>
         <FormGroup controlId='formControlsPassword'>
@@ -104,10 +107,10 @@ const CreateAccount = React.createClass({
          <FormGroup controlId='formControlsSelect'>
           <ControlLabel>Hashing Strength</ControlLabel>
           <FormControl onChange={this.handleHashingChange} value={this.state.value} componentClass="select" placeholder="select">
-            <option value='1'>Light - 100k times 140 length</option>
-            <option value='2'>Medium - 200k times 270 length</option>
-            <option value='3'>Strong - 300k times 420 length</option>
-            <option value='4'>Impossible - 400k times 560 length</option>
+            <option value='1'>Light - 100k times 128bits</option>
+            <option value='2'>Medium - 200k times 256bits</option>
+            <option value='3'>Strong - 300k times 512bits</option>
+            <option value='4'>Impossible - 400k times 1024bits</option>
           </FormControl>
         </FormGroup>
         <Button type='submit'>
@@ -115,7 +118,7 @@ const CreateAccount = React.createClass({
         </Button>
       </form>
     )
-  }
+  },
 })
 
 ReactDOM.render(<CreateAccount/>, document.getElementById('react-create'))

@@ -1,10 +1,11 @@
 'use strict'
 
-const crypto = require('./crypto')
-const events = require('./events')
-const timer  = require('./timer')
-const chkErr = require('./error').chkErr
-const mkdirp = require('mkdirp')
+const crypto     = require('./crypto')
+const events     = require('./events')
+const timer      = require('./timer')
+const chkErr     = require('./error').chkErr
+const mkdirp     = require('mkdirp')
+const cryptoNode = require('crypto')
 
 let electron
 let callbackError
@@ -44,15 +45,10 @@ exports.init = (a, cb) => {
 
   // On login event
   electron.ipcMain.on('login', (event, data) => {
-    // Convert to ints
-    data.bits              = parseInt(data.bits)
-    data.pbkd2f.iterations = parseInt(data.pbkd2f.iterations)
-    data.pbkd2f.count      = parseInt(data.pbkd2f.count)
-
     // Override application data from user settings
-    electron.crypt.bits              = data.bits
-    electron.crypt.pbkd2f.iterations = data.pbkd2f.iterations
-    electron.crypt.pbkd2f.count      = data.pbkd2f.count
+    electron.crypt.bits              = parseInt(data.bits)
+    electron.crypt.pbkd2f.iterations = parseInt(data.pbkd2f.iterations)
+    electron.crypt.pbkd2f.count      = parseInt(data.pbkd2f.count)
 
     // Check if passwords are same if first time run
     if (electron.firstTime) {
