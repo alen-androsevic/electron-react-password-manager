@@ -33,7 +33,7 @@ exports.generateKey = (passphrase, cb) => {
     electron.log('Pepper Hash (' + pepper.length + ')')
     electron.log('Pepper + Passphrase + Salt Hashed (' + peppersaltpass.length + ')')
 
-    crypto.pbkdf2(passphrase, peppersaltpass, iterations, len, 'sha512', (err, hash) => {
+    crypto.pbkdf2(passphrase, peppersaltpass, iterations, 16, 'sha512', (err, hash) => {
       if (err)
         throw err
 
@@ -75,20 +75,12 @@ exports.decryptString = (string, cb) => {
   chmac.update(ct)
   chmac.update(IV.toString('hex'))
 
-  let sentinel
   let val1 = chmac.digest('hex')
   let val2 = hmac
-  if (val1.length !== val2.length) {
-    return false
-  }
 
-  for (let i = 0; i <= (val1.length - 1); i++) {
-    sentinel |= val1.charCodeAt(i) ^ val2.charCodeAt(i)
-  }
-
-  if (sentinel === 0) {
+  if (val1 !== val2) {
+    // TODO: exception: login, create 2 services, exit program, tamper with the last password db file, re-open program: no errors
     cb('HMAC TAMPER')
-    return
   }
 
   let hash = crypto.createHash('sha256').update(electron.hash).digest()
