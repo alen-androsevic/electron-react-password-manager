@@ -6,6 +6,7 @@ const timer      = require('./timer')
 const chkErr     = require('./error').chkErr
 const mkdirp     = require('mkdirp')
 const cryptoNode = require('crypto')
+const async      = require('async')
 
 let electron
 let callbackError
@@ -82,9 +83,26 @@ exports.init = (a, cb) => {
 
   // When a password (service) has been added
   electron.ipcMain.on('addService', (event, post) => {
-    crypto.encryptString(post.password, electron.encryption.pub, (err, encrypted) => {
-      chkErr(err, cb)
-      post.password = encrypted
+    async.parallel({
+      password: function(callback) {
+        crypto.encryptString(post.password, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+
+      email: function(callback) {
+        crypto.encryptString(post.email, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+
+      service: function(callback) {
+        crypto.encryptString(post.service, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+    },
+    function(err, post) {
       electron.db.passwords.post(post, (err, data) => {
         chkErr(err, cb)
         exports.sendMsg(event, true, 'Password added!', {id: data})
@@ -112,7 +130,7 @@ exports.createIfNotExists = db => {
         db.create((err) => {
           chkErr(err, callbackError)
           if (db.name === 'salt') {
-            // First time the salt database has been created, lets populate it with a super salt from crypto
+            // First time the salt database has been created, lets populate it with a CSPRNG from crypto
             db.post({salt: crypto.generateSalt()}, (err, data) => {
               chkErr(err, callbackError)
             })
@@ -129,17 +147,37 @@ exports.getPasswords = cb => {
   const time = new timer()
 
   for (let i = 0; i < passwords.length; i++) {
-    crypto.decryptString(passwords[i].password, electron.encryption.rsa, (err, decrypted) => {
-      chkErr(err, cb)
-      passwords[i].password = decrypted
+    async.parallel({
+      password: function(callback) {
+        crypto.decryptString(passwords[i].password, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+
+      email: function(callback) {
+        crypto.decryptString(passwords[i].email, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+
+      service: function(callback) {
+        crypto.decryptString(passwords[i].service, (err, decrypted) => {
+          callback(err, decrypted)
+        })
+      },
+    },
+    function(err, decrypted) {
+      passwords[i].password = decrypted.password
+      passwords[i].email = decrypted.email
+      passwords[i].service = decrypted.service
     })
   }
 
   const timerStop = time.stop()
   if (passwords.length >= 1) {
     const str = {
-      one: 'Decrypted all passwords in '  + timerStop + 'ms',
-      two: '(' + Math.round(timerStop / passwords.length) + 'ms per password)',
+      one: 'Decrypted all data in '  + timerStop + 'ms',
+      two: '(' + Math.round(timerStop / passwords.length) + 'ms per data)',
     }
     electron.log(str.one + str.two)
   }
@@ -163,7 +201,7 @@ exports.loginContinue = (event, data) => {
 
     // Decrypt one password to check if password is correct
     firstResult = firstResult[0]
-    crypto.decryptString(firstResult.password, electron.encryption.rsa, (err, decrypted) => {
+    crypto.decryptString(firstResult.password, (err, decrypted) => {
       chkErr(err, callbackError)
       if (decrypted === '�w^~)�') { // For some reason a failed password is    �w^~)�    why? base64?
         exports.sendMsg(event, false, 'Wrong password!')

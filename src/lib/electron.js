@@ -6,7 +6,7 @@ exports.init = electron => {
   electron.dev = false
 
   electron.crypt = {
-    bits: 2048,
+    bits: 256,
     salt: {
       randomBytes: 2048,
     },

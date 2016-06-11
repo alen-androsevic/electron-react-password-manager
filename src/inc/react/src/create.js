@@ -16,7 +16,7 @@ const CreateAccount = React.createClass({
     return {
       passwordone: '',
       passwordtwo: '',
-      encryption:  '512',
+      encryption:  '256',
       hashing:     '1',
     }
   },
@@ -97,10 +97,8 @@ const CreateAccount = React.createClass({
           <FormGroup controlId='formControlsSelect'>
            <ControlLabel>Encryption Strength</ControlLabel>
            <FormControl onChange={this.handleEncryptionChange} value={this.state.value} componentClass='select' placeholder='select'>
-             <option value='512'>Light - 512bits</option>
-             <option value='1024'>Medium - 1024bits</option>
-             <option value='2048'>Strong - 2048bits</option>
-             <option value='4096'>Impossible - 4096bits</option>
+             <option value='128'>Secure - 1024bits</option>
+             <option value='256'>Heavily Secured - 2048bits</option>
            </FormControl>
          </FormGroup>
 

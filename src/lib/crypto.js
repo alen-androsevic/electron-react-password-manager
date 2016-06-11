@@ -1,8 +1,6 @@
 'use strict'
 
 const crypto     = require('crypto')
-const cryptico   = require('cryptico-js')
-const base64     = require('js-base64').Base64
 const timer      = require('./timer')
 const spawn      = require('threads').spawn
 const macaddress = require('macaddress')
@@ -15,55 +13,34 @@ exports.init = a => {
 
 // Generates the encryption keys used to decrypt and encrypt everything
 exports.generateKey = (passphrase, cb) => {
-  let time
-  let Totaltime = new timer()
-
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
   let iterations = electron.crypt.pbkd2f.iterations
   let len        = electron.crypt.pbkd2f.count
 
-  electron.log('RSA encryption level: ' + electron.crypt.bits + 'bits')
-  electron.log('PBKDF2 iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('PBKDF2 key length: ' + len)
-  electron.log('CSPRNG salt(' + salt.length + ')')
+  electron.log('AES Encryption Level: ' + electron.crypt.bits + 'bits')
+  electron.log('PBKDF2 Iterations: ' + iterations.toLocaleString('en-US'))
+  electron.log('PBKDF2 Key Length: ' + len)
+  electron.log('CSPRNG Salt(' + salt.length + ')')
 
-  // Build the hash in a thread
-  time = new timer()
+  let time = new timer()
   exports.generatePepper(function(err, pepper) {
     if (err)
       throw new Error(err)
 
-    electron.log('Pepper hash (' + pepper.length + ')')
-
     const peppersaltpass = crypto.createHash('sha512').update(pepper + passphrase + salt).digest('hex')
-    electron.log('pepper + passphrase + salt hashed (' + peppersaltpass.length + ')')
 
-    exports.hashPBKD2F(passphrase, peppersaltpass, iterations, len, 'sha512', (hash) => {
-      electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
+    electron.log('Pepper Hash (' + pepper.length + ')')
+    electron.log('Pepper + Passphrase + Salt Hashed (' + peppersaltpass.length + ')')
 
-      // Generate the RSA in a thread
-      time = new timer()
-      const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
-      const pub = cryptico.publicKeyString(rsa)
-      electron.log('RSA key complete: ' + time.stop() + 'ms')
-      electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
-      electron.encryption = {
-        rsa: rsa,
-        pub: pub,
-      }
+    crypto.pbkdf2(passphrase, peppersaltpass, iterations, len, 'sha512', (err, hash) => {
+      if (err)
+        throw err
 
+      electron.hash = hash
+      electron.log('PBKDF2 Hash(' + hash.toString('hex').length + ') Complete: ' + time.stop() + 'ms')
       cb()
     })
-  })
-}
-
-// The build hash function running in a thread
-exports.hashPBKD2F = (passphrase, salt, iterations, len, hashmethod, cb) => {
-  crypto.pbkdf2(passphrase, salt, iterations, len, hashmethod, (err, key) => {
-    if (err)
-      throw err
-    cb(key.toString('hex'))
   })
 }
 
@@ -71,7 +48,7 @@ exports.hashPBKD2F = (passphrase, salt, iterations, len, hashmethod, cb) => {
 exports.generatePepper = cb => {
   macaddress.one(function(err, mac) {
     const pepper = crypto.createHash('sha512').update(mac).digest('hex')
-    electron.log('Pepper raw (' + mac.length + ')')
+    electron.log('Pepper Raw (' + mac.length + ')')
     cb(null, pepper)
   })
 }
@@ -81,31 +58,18 @@ exports.generateSalt = () => {
   return crypto.randomBytes(electron.crypt.salt.randomBytes).toString('hex')
 }
 
-// Using cryptico to encrypt strings in a thread
-exports.encryptString = (string, publickey, cb) => {
-  const thread = spawn(function(input, done) {
-    const cryptico = require('cryptico')
-    const base64   = require('js-base64').Base64
-    let encrypted = cryptico.encrypt(base64.encode(input.string), input.publickey)
-    done({encrypted})
-  })
-
-  thread.send({string, publickey})
-  .on('message', function(response) {
-    if (response.encrypted)
-      if (response.encrypted.status)
-        if (response.encrypted.status == 'Invalid public key')
-          cb(response.encrypted.status)
-    cb(null, response.encrypted.cipher)
-    thread.kill()
-  })
-  .on('error', function(err) {
-    throw new Error(err)
-  })
+// Using crypto to encrypt strings
+exports.encryptString = (string, cb) => {
+  let cipher = crypto.createCipher('aes-' + electron.crypt.bits + '-cbc', electron.hash)
+  let encrypted = cipher.update(string, 'utf8', 'base64')
+  encrypted += cipher.final('base64')
+  cb(null, encrypted)
 }
 
-// Using cryptico to decrypt strings
-exports.decryptString = (string, privatekey, cb) => {
-  let decrypted = cryptico.decrypt(string, privatekey)
-  cb(null, base64.decode(decrypted.plaintext))
+// Using crypto to decrypt strings
+exports.decryptString = (string, cb) => {
+  let decipher = crypto.createDecipher('aes-' + electron.crypt.bits + '-cbc', electron.hash)
+  let decrypted = decipher.update(string, 'base64', 'utf8')
+  decrypted += decipher.final('utf8')
+  cb(null, decrypted)
 }
