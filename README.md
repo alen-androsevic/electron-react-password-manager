@@ -34,7 +34,8 @@
 -   Your password is your passphrase for your encryption key
 -   All of your data is stored **CLIENT** sided, **NO** server storage!
 
-## > Flowchart
+## > Security Flowchart
+
 ![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart.jpg)
 
 ## > Showcase
