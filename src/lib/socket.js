@@ -131,8 +131,11 @@ exports.createIfNotExists = db => {
           chkErr(err, callbackError)
           if (db.name === 'salt') {
             // First time the salt database has been created, lets populate it with all the CSPRNG functions from crypto
-            db.post({salt: crypto.generateSalt(), hmac: crypto.generateHMAC()}, (err, data) => {
-              chkErr(err, callbackError)
+            let salt = crypto.generateSalt()
+            crypto.generatePepper(salt, (err, pepper) => {
+              db.post({salt: salt, hmac: crypto.generateHMAC(), pepper}, (err, data) => {
+                chkErr(err, callbackError)
+              })
             })
           }
         })

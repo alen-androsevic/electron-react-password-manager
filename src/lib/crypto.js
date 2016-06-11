@@ -15,52 +15,57 @@ exports.init = a => {
 exports.generateKey = (passphrase, cb) => {
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
+  let pepper     = electron.db.salt.allSync()[0].pepper
   let iterations = electron.crypt.pbkd2f.iterations
-  let len        = electron.crypt.pbkd2f.count
+  let bytes      = electron.crypt.pbkd2f.bytes
 
   electron.log('AES Encryption Level: ' + electron.crypt.bits + 'bits')
   electron.log('PBKDF2 Iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('PBKDF2 Key Length: ' + len)
+  electron.log('PBKDF2 Key Bytes: ' + bytes)
   electron.log('CSPRNG Salt(' + salt.length + ')')
 
   let time = new timer()
-  exports.generatePepper(function(err, pepper) {
+  const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
+
+  electron.log('Pepper Hash (' + pepper.length + ')')
+  electron.log('PBKDF2 Salt Hash (' + pbkdf2Salt.length + ')')
+
+  crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, bytes, 'sha512', (err, hash) => {
     if (err)
-      throw new Error(err)
+      cb(err)
 
-    const peppersaltpass = crypto.createHash('sha512').update(pepper + passphrase + salt).digest('hex')
+    hash = hash.toString(electron.crypt.encryptMethod)
 
-    electron.log('Pepper Hash (' + pepper.length + ')')
-    electron.log('Pepper + Passphrase + Salt Hashed (' + peppersaltpass.length + ')')
+    // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
+    electron.hash = crypto.createHash('sha256').update(hash).digest()
 
-    crypto.pbkdf2(passphrase, peppersaltpass, iterations, len, 'sha512', (err, hash) => {
-      if (err)
-        cb(err)
-
-      electron.hash = hash
-      electron.log('PBKDF2 Hash(' + hash.toString('hex').length + ') Complete: ' + time.stop() + 'ms')
-      cb()
-    })
+    electron.log('PBKDF2(' + hash.length + ') Complete: ' + time.stop() + 'ms')
+    cb()
   })
 }
 
 // Generate a unique pepper for this computer
-exports.generatePepper = cb => {
+exports.generatePepper = (salt, cb) => {
+  // No database values have been created by the user yet, so these values will be from the program defaults
+  let iterations = electron.crypt.pbkd2f.iterations
+  let bytes      = electron.crypt.pbkd2f.bytes
+
+  // We generate a pepper from the users mac address
   macaddress.one(function(err, mac) {
-    const pepper = crypto.createHash('sha512').update(mac).digest('hex')
-    electron.log('Pepper Raw (' + mac.length + ')')
-    cb(null, pepper)
+    // And pbkdf2 sync it with half the iteration and bytes length of the program defaults
+    let pepperHash = crypto.pbkdf2Sync(mac, salt, iterations / 2, bytes / 2, 'sha512')
+    cb(null, pepperHash.toString(electron.crypt.encryptMethod))
   })
 }
 
 // CSPRNG salt
 exports.generateSalt = () => {
-  return crypto.randomBytes(electron.crypt.salt.randomBytes).toString('hex')
+  return crypto.randomBytes(electron.crypt.salt.randomBytes).toString(electron.crypt.encryptMethod)
 }
 
 // HMAC key generation
 exports.generateHMAC = () => {
-  return crypto.randomBytes(32).toString('hex')
+  return crypto.randomBytes(32).toString(electron.crypt.encryptMethod)
 }
 
 // How we decrypt strings
@@ -68,17 +73,17 @@ exports.decryptString = (string, cb) => {
   // Get the cipher blob data
   let cipherBlob = string.split('$')
   let cipherText = cipherBlob[0]
-  let IV = new Buffer(cipherBlob[1], 'hex')
+  let IV = new Buffer(cipherBlob[1], electron.crypt.encryptMethod)
   let hmac = cipherBlob[2]
 
-  // Get the stored HMAC secret (which does not have to be secret at all for our data to be secure)
+  // Get the stored HMAC secret
   // And create a HMAC from the secret with the ciphertext and IV
-  let chmac = crypto.createHmac('sha256', electron.db.salt.allSync()[0].hmac)
+  let chmac = crypto.createHmac('sha512', electron.db.salt.allSync()[0].hmac)
   chmac.update(cipherText)
-  chmac.update(IV.toString('hex'))
+  chmac.update(IV.toString(electron.crypt.encryptMethod))
 
-  // Then compare the two HMAC values
-  let thisHmac = chmac.digest('hex')
+  // Set some variables for checking later on
+  let thisHmac = chmac.digest(electron.crypt.encryptMethod)
   let thatHmac = hmac
   let noCorruption
 
@@ -95,15 +100,12 @@ exports.decryptString = (string, cb) => {
     return
   }
 
-  // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
-  let hash = crypto.createHash('sha256').update(electron.hash).digest()
-
   // Create the decipher
-  let decryptor = crypto.createDecipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+  let decryptor = crypto.createDecipheriv('aes-' + electron.crypt.bits + '-cbc', electron.hash, IV)
 
   // Decrypt the ciphertext
-  let plaintext = decryptor.update(cipherText, 'hex', 'utf-8')
-  plaintext += decryptor.final('utf-8')
+  let plaintext = decryptor.update(cipherText, electron.crypt.encryptMethod, electron.crypt.decryptMethod)
+  plaintext += decryptor.final(electron.crypt.decryptMethod)
 
   cb(null, plaintext)
 }
@@ -113,20 +115,17 @@ exports.encryptString = (string, cb) => {
   // Use CSPRNG to generate unique bytes for the IV
   let IV = new Buffer(crypto.randomBytes(16))
 
-  // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
-  let hash = crypto.createHash('sha256').update(electron.hash).digest()
-
   // Create the cipher
-  let encryptor = crypto.createCipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+  let encryptor = crypto.createCipheriv('aes-' + electron.crypt.bits + '-cbc', electron.hash, IV)
 
   // Encrypt the string
-  var cipherText = encryptor.update(string, 'utf8', 'hex')
-  cipherText += encryptor.final('hex')
+  var cipherText = encryptor.update(string, electron.crypt.decryptMethod, electron.crypt.encryptMethod)
+  cipherText += encryptor.final(electron.crypt.encryptMethod)
 
   // Create the HMAC
-  let hmac = crypto.createHmac('sha256',  electron.db.salt.allSync()[0].hmac)
+  let hmac = crypto.createHmac('sha512',  electron.db.salt.allSync()[0].hmac)
   hmac.update(cipherText)
-  hmac.update(IV.toString('hex'))
+  hmac.update(IV.toString(electron.crypt.encryptMethod))
 
-  cb(null, cipherText + '$' + IV.toString('hex') + '$' + hmac.digest('hex'))
+  cb(null, cipherText + '$' + IV.toString(electron.crypt.encryptMethod) + '$' + hmac.digest(electron.crypt.encryptMethod))
 }

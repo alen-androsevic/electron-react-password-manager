@@ -7,12 +7,14 @@ exports.init = electron => {
 
   electron.crypt = {
     bits: 256,
+    decryptMethod: 'utf-8',
+    encryptMethod: 'hex',
     salt: {
-      randomBytes: 2048,
+      randomBytes: 128,
     },
     pbkd2f: {
-      iterations: 300000,
-      count:      128,
+      iterations: 600000,
+      bytes:      128,
     },
   }
   electron.db = {

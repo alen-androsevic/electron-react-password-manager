@@ -33,11 +33,11 @@ const LoginAccount = React.createClass({
       bits:   encryption.bits,
       pbkd2f: encryption.pbkd2f,
     })
-    
+
     this.setState({disabled: 'disabled'})
     setTimeout(function(that) {
       that.setState({password: '', disabled: false})
-    }, 1000, this)
+    }, 5000, this)
   },
 
   render: function() {
@@ -53,7 +53,7 @@ const LoginAccount = React.createClass({
           <ControlLabel>Password</ControlLabel>
           <FormControl {...opts} onChange={this.handlePassChange} value={this.state.password} type='password' />
         </FormGroup>
-        <Button type='submit'>
+        <Button {...opts} type='submit'>
           Login
         </Button>
       </form>
