@@ -36,7 +36,7 @@
 
 ## > Security Flowchart
 
-![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart.jpg)
+![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart2.jpg)
 
 ## > Showcase
 
