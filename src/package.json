@@ -31,7 +31,6 @@
   "dependencies": {
     "async": "^2.0.0-rc.5",
     "clipboard": "^1.5.10",
-    "cryptico": "^1.0.2",
     "cryptico-js": "^1.1.0",
     "electron-connect": "^0.4.2",
     "electron-notification-shim": "^1.1.0",
@@ -45,6 +44,7 @@
     "gulp-minify-css": "^1.2.4",
     "gulp-util": "^3.0.7",
     "js-base64": "^2.1.9",
+    "macaddress": "^0.2.8",
     "moment": "^2.13.0",
     "node-notifier": "^4.5.0",
     "nosqlite": "^0.2.2",

@@ -1,11 +1,12 @@
 'use strict'
 
-const crypto   = require('crypto')
-const cryptico = require('cryptico-js')
-const base64   = require('js-base64').Base64
-const pbkd2f   = require('pbkdf2')
-const timer    = require('./timer')
-const spawn    = require('threads').spawn
+const crypto     = require('crypto')
+const cryptico   = require('cryptico-js')
+const base64     = require('js-base64').Base64
+const pbkd2f     = require('pbkdf2')
+const timer      = require('./timer')
+const spawn      = require('threads').spawn
+const macaddress = require('macaddress')
 
 let electron
 
@@ -26,26 +27,34 @@ exports.generateKey = (passphrase, cb) => {
   electron.log('Start key generation')
   electron.log('RSA encryption level: ' + electron.crypt.bits + 'bits')
   electron.log('pbkd2f iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('pbkd2f length: ' + len)
+  electron.log('pbkd2f key length: ' + len)
   electron.log('Application salt(' + salt.length + ')')
 
-  // Build the hash in a thead
+  // Build the hash in a thread
   time = new timer()
-  exports.buildHash(passphrase, salt, iterations, len, 'sha512', (hash) => {
-    electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
+  exports.generatePepper(function(err, pepper) {
+    if (err)
+      throw new Error(err)
 
-    // Generate the RSA in a thead
-    time = new timer()
-    const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
-    const pub = cryptico.publicKeyString(rsa)
-    electron.log('RSA key complete: ' + time.stop() + 'ms')
-    electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
-    electron.encryption = {
-      rsa: rsa,
-      pub: pub,
-    }
+    const peppersalt = crypto.createHash('sha512').update(pepper + salt).digest('hex')
+    electron.log('pepper + salt hashed (' + peppersalt.length + ')')
 
-    cb()
+    exports.buildHash(passphrase, peppersalt, iterations, len, 'sha512', (hash) => {
+      electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
+
+      // Generate the RSA in a thread
+      time = new timer()
+      const rsa = cryptico.generateRSAKey(hash, electron.crypt.bits)
+      const pub = cryptico.publicKeyString(rsa)
+      electron.log('RSA key complete: ' + time.stop() + 'ms')
+      electron.log('Key pair generation complete: ' + Totaltime.stop() + 'ms total')
+      electron.encryption = {
+        rsa: rsa,
+        pub: pub,
+      }
+
+      cb()
+    })
   })
 }
 
@@ -66,6 +75,17 @@ exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
   })
   .on('error', function(err) {
     throw new Error(err)
+  })
+}
+
+// Generate a unique pepper for this computer
+exports.generatePepper = cb => {
+  macaddress.one(function(err, mac) {
+    const pepper = crypto.createHash('sha512').update(mac).digest('hex')
+
+    electron.log('Pepper raw (' + mac.length + '):' + mac)
+    electron.log('Pepper hash (' + pepper.length + '):' + pepper)
+    cb(null, pepper)
   })
 }
 
