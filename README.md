@@ -29,7 +29,7 @@
 -   Unique computer fingerprint used as a pepper for PBKD2F
 -   up to 400k PBKD2F iterations
 -   up to 2048bit AES passphrase encryption (aes-256-cbc)
--   HMAC Authentication
+-   HMAC Authentication (Encrypt-then-MAC)
 -   CSPRNG initialization vectors
 -   Stores passwords, email and service name encrypted to a local database
 -   No accounts just a password you come up with to rule them all
