@@ -77,10 +77,16 @@ exports.decryptString = (string, cb) => {
 
   let val1 = chmac.digest('hex')
   let val2 = hmac
+  let sentinel
+  for (var i = 0; i <= (val1.length - 1); i++) {
+    sentinel |= val1.charCodeAt(i) ^ val2.charCodeAt(i)
+  }
 
-  if (val1 !== val2) {
+  if (val1 !== val2 || sentinel === 1) {
     // TODO: exception: login, create 2 services, exit program, tamper with the last password db file, re-open program: no errors
+    console.log(' --- silent HMAC temper?')
     cb('HMAC TAMPER')
+    return
   }
 
   let hash = crypto.createHash('sha256').update(electron.hash).digest()
@@ -91,7 +97,7 @@ exports.decryptString = (string, cb) => {
 
 // Using crypto to encrypt strings
 exports.encryptString = (string, cb) => {
-  let IV = new Buffer(crypto.randomBytes(16)) // Ensure that the IV (initialization vector) is random
+  let IV = new Buffer(crypto.randomBytes(16))
   let cipherText
   let hmac
   let encryptor
