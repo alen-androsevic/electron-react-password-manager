@@ -203,7 +203,7 @@ exports.loginContinue = (event, data) => {
     firstResult = firstResult[0]
     crypto.decryptString(firstResult.password, (err, decrypted) => {
       if (err === 'HMAC TAMPER') {
-        exports.sendMsg(event, false, 'Wrong password!')
+        exports.sendMsg(event, false, 'Your password DB is corrupt')
       } else {
         chkErr(err, callbackError)
         exports.sendMsg(event, true, 'Login succeeded, please wait..')
