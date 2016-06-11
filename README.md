@@ -2,7 +2,7 @@
 
 *Yay another useless password manager!*
 
-**Frontend needs some love, but it all works**
+**Currently broken!**
 
 ## > Installation
 
