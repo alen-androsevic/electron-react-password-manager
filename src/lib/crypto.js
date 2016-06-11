@@ -39,7 +39,7 @@ exports.generateKey = (passphrase, cb) => {
     const peppersalt = crypto.createHash('sha512').update(pepper + salt).digest('hex')
     electron.log('pepper + salt hashed (' + peppersalt.length + ')')
 
-    exports.buildHash(passphrase, peppersalt, iterations, len, 'sha512', (hash) => {
+    exports.hashPBKD2F(passphrase, peppersalt, iterations, len, 'sha512', (hash) => {
       electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
 
       // Generate the RSA in a thread
@@ -59,7 +59,7 @@ exports.generateKey = (passphrase, cb) => {
 }
 
 // The build hash function running in a thread
-exports.buildHash = (passphrase, salt, iterations, len, hashmethod, cb) => {
+exports.hashPBKD2F = (passphrase, salt, iterations, len, hashmethod, cb) => {
   const thread = spawn(function(input, done) {
     const base64 = require('js-base64').Base64
     const pbkd2f = require('pbkdf2')
@@ -83,8 +83,8 @@ exports.generatePepper = cb => {
   macaddress.one(function(err, mac) {
     const pepper = crypto.createHash('sha512').update(mac).digest('hex')
 
-    electron.log('Pepper raw (' + mac.length + '):' + mac)
-    electron.log('Pepper hash (' + pepper.length + '):' + pepper)
+    electron.log('Pepper raw (' + mac.length + ')')
+    electron.log('Pepper hash (' + pepper.length + ')')
     cb(null, pepper)
   })
 }
