@@ -12,7 +12,7 @@ exports.init = electron => {
     },
     pbkd2f: {
       iterations: 300000,
-      count:      512,
+      count:      128,
     },
   }
   electron.db = {

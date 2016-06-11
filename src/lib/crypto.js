@@ -11,7 +11,7 @@ exports.init = a => {
   electron = a
 }
 
-// Generates the encryption keys used to decrypt and encrypt everything
+// How the secret key is generated
 exports.generateKey = (passphrase, cb) => {
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
@@ -33,9 +33,9 @@ exports.generateKey = (passphrase, cb) => {
     electron.log('Pepper Hash (' + pepper.length + ')')
     electron.log('Pepper + Passphrase + Salt Hashed (' + peppersaltpass.length + ')')
 
-    crypto.pbkdf2(passphrase, peppersaltpass, iterations, 16, 'sha512', (err, hash) => {
+    crypto.pbkdf2(passphrase, peppersaltpass, iterations, len, 'sha512', (err, hash) => {
       if (err)
-        throw err
+        cb(err)
 
       electron.hash = hash
       electron.log('PBKDF2 Hash(' + hash.toString('hex').length + ') Complete: ' + time.stop() + 'ms')
@@ -63,52 +63,70 @@ exports.generateHMAC = () => {
   return crypto.randomBytes(32).toString('hex')
 }
 
-// Using crypto to decrypt strings
+// How we decrypt strings
 exports.decryptString = (string, cb) => {
+  // Get the cipher blob data
   let cipherBlob = string.split('$')
-  let ct = cipherBlob[0]
+  let cipherText = cipherBlob[0]
   let IV = new Buffer(cipherBlob[1], 'hex')
   let hmac = cipherBlob[2]
-  let decryptor
 
+  // Get the stored HMAC secret (which does not have to be secret at all for our data to be secure)
+  // And create a HMAC from the secret with the ciphertext and IV
   let chmac = crypto.createHmac('sha256', electron.db.salt.allSync()[0].hmac)
-  chmac.update(ct)
+  chmac.update(cipherText)
   chmac.update(IV.toString('hex'))
 
-  let val1 = chmac.digest('hex')
-  let val2 = hmac
-  let sentinel
-  for (var i = 0; i <= (val1.length - 1); i++) {
-    sentinel |= val1.charCodeAt(i) ^ val2.charCodeAt(i)
+  // Then compare the two HMAC values
+  let thisHmac = chmac.digest('hex')
+  let thatHmac = hmac
+  let noCorruption
+
+  // Check for data corruption
+  for (var i = 0; i <= (thisHmac.length - 1); i++) {
+    noCorruption |= thisHmac.charCodeAt(i) ^ thatHmac.charCodeAt(i)
   }
 
-  if (val1 !== val2 || sentinel === 1) {
+  // Should be equal
+  if (thisHmac !== thatHmac || noCorruption === 1) {
     // TODO: exception: login, create 2 services, exit program, tamper with the last password db file, re-open program: no errors
-    console.log(' --- silent HMAC temper?')
+    electron.log(' --- HMAC TAMPERING!')
     cb('HMAC TAMPER')
     return
   }
 
+  // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
   let hash = crypto.createHash('sha256').update(electron.hash).digest()
-  decryptor = crypto.createDecipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
-  decryptor.update(ct, 'hex', 'utf-8')
-  cb(null, decryptor.final('utf-8'))
+
+  // Create the decipher
+  let decryptor = crypto.createDecipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+
+  // Decrypt the ciphertext
+  let plaintext = decryptor.update(cipherText, 'hex', 'utf-8')
+  plaintext += decryptor.final('utf-8')
+
+  cb(null, plaintext)
 }
 
-// Using crypto to encrypt strings
+// How we encrypt strings
 exports.encryptString = (string, cb) => {
+  // Use CSPRNG to generate unique bytes for the IV
   let IV = new Buffer(crypto.randomBytes(16))
-  let cipherText
-  let hmac
-  let encryptor
+
+  // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
   let hash = crypto.createHash('sha256').update(electron.hash).digest()
-  encryptor = crypto.createCipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
-  encryptor.setEncoding('hex')
-  encryptor.write(string)
-  encryptor.end()
-  cipherText = encryptor.read()
-  hmac = crypto.createHmac('sha256',  electron.db.salt.allSync()[0].hmac)
+
+  // Create the cipher
+  let encryptor = crypto.createCipheriv('aes-' + electron.crypt.bits + '-cbc', hash, IV)
+
+  // Encrypt the string
+  var cipherText = encryptor.update(string, 'utf8', 'hex')
+  cipherText += encryptor.final('hex')
+
+  // Create the HMAC
+  let hmac = crypto.createHmac('sha256',  electron.db.salt.allSync()[0].hmac)
   hmac.update(cipherText)
   hmac.update(IV.toString('hex'))
+
   cb(null, cipherText + '$' + IV.toString('hex') + '$' + hmac.digest('hex'))
 }
