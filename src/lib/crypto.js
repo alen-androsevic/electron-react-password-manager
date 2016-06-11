@@ -3,7 +3,6 @@
 const crypto     = require('crypto')
 const cryptico   = require('cryptico-js')
 const base64     = require('js-base64').Base64
-const pbkd2f     = require('pbkdf2')
 const timer      = require('./timer')
 const spawn      = require('threads').spawn
 const macaddress = require('macaddress')
@@ -24,11 +23,10 @@ exports.generateKey = (passphrase, cb) => {
   let iterations = electron.crypt.pbkd2f.iterations
   let len        = electron.crypt.pbkd2f.count
 
-  electron.log('Start key generation')
   electron.log('RSA encryption level: ' + electron.crypt.bits + 'bits')
-  electron.log('pbkd2f iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('pbkd2f key length: ' + len)
-  electron.log('Application salt(' + salt.length + ')')
+  electron.log('PBKDF2 iterations: ' + iterations.toLocaleString('en-US'))
+  electron.log('PBKDF2 key length: ' + len)
+  electron.log('CSPRNG salt(' + salt.length + ')')
 
   // Build the hash in a thread
   time = new timer()
@@ -36,10 +34,12 @@ exports.generateKey = (passphrase, cb) => {
     if (err)
       throw new Error(err)
 
-    const peppersalt = crypto.createHash('sha512').update(pepper + salt).digest('hex')
-    electron.log('pepper + salt hashed (' + peppersalt.length + ')')
+    electron.log('Pepper hash (' + pepper.length + ')')
 
-    exports.hashPBKD2F(passphrase, peppersalt, iterations, len, 'sha512', (hash) => {
+    const peppersaltpass = crypto.createHash('sha512').update(pepper + passphrase + salt).digest('hex')
+    electron.log('pepper + passphrase + salt hashed (' + peppersaltpass.length + ')')
+
+    exports.hashPBKD2F(passphrase, peppersaltpass, iterations, len, 'sha512', (hash) => {
       electron.log('pbkd2f hash(' + hash.length + ') complete: ' + time.stop() + 'ms')
 
       // Generate the RSA in a thread
@@ -60,21 +60,10 @@ exports.generateKey = (passphrase, cb) => {
 
 // The build hash function running in a thread
 exports.hashPBKD2F = (passphrase, salt, iterations, len, hashmethod, cb) => {
-  const thread = spawn(function(input, done) {
-    const base64 = require('js-base64').Base64
-    const pbkd2f = require('pbkdf2')
-    let hash     = pbkd2f.pbkdf2Sync(input.passphrase, input.salt, input.iterations, input.len, input.hashmethod)
-    hash         = hash.toString('hex')
-    done({hash})
-  })
-
-  thread.send({passphrase, salt, iterations, len, hashmethod})
-  .on('message', function(response) {
-    cb(response.hash)
-    thread.kill()
-  })
-  .on('error', function(err) {
-    throw new Error(err)
+  crypto.pbkdf2(passphrase, salt, iterations, len, hashmethod, (err, key) => {
+    if (err)
+      throw err
+    cb(key.toString('hex'))
   })
 }
 
@@ -82,9 +71,7 @@ exports.hashPBKD2F = (passphrase, salt, iterations, len, hashmethod, cb) => {
 exports.generatePepper = cb => {
   macaddress.one(function(err, mac) {
     const pepper = crypto.createHash('sha512').update(mac).digest('hex')
-
     electron.log('Pepper raw (' + mac.length + ')')
-    electron.log('Pepper hash (' + pepper.length + ')')
     cb(null, pepper)
   })
 }

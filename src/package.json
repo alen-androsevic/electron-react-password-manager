@@ -49,7 +49,6 @@
     "node-notifier": "^4.5.0",
     "nosqlite": "^0.2.2",
     "notification-shim": "^0.1.1",
-    "pbkdf2": "^3.0.4",
     "react-bootstrap": "^0.29.4",
     "reactable": "^0.13.2",
     "threads": "^0.5.4"
