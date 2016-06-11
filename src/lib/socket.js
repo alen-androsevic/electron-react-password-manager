@@ -130,8 +130,8 @@ exports.createIfNotExists = db => {
         db.create((err) => {
           chkErr(err, callbackError)
           if (db.name === 'salt') {
-            // First time the salt database has been created, lets populate it with a CSPRNG from crypto
-            db.post({salt: crypto.generateSalt()}, (err, data) => {
+            // First time the salt database has been created, lets populate it with all the CSPRNG functions from crypto
+            db.post({salt: crypto.generateSalt(), hmac: crypto.generateHMAC()}, (err, data) => {
               chkErr(err, callbackError)
             })
           }
@@ -202,14 +202,13 @@ exports.loginContinue = (event, data) => {
     // Decrypt one password to check if password is correct
     firstResult = firstResult[0]
     crypto.decryptString(firstResult.password, (err, decrypted) => {
-      chkErr(err, callbackError)
-      if (decrypted === '�w^~)�') { // For some reason a failed password is    �w^~)�    why? base64?
+      if (err === 'HMAC TAMPER') {
         exports.sendMsg(event, false, 'Wrong password!')
-        return // Stop because string is still encrypted
+      } else {
+        chkErr(err, callbackError)
+        exports.sendMsg(event, true, 'Login succeeded, please wait..')
+        events.loadPage('index')
       }
-
-      exports.sendMsg(event, true, 'Login succeeded, please wait..')
-      events.loadPage('index')
     })
   })
 }
