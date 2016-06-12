@@ -21,6 +21,13 @@
 *Every time you change files in the src folder;*
 *gulp will transpile, minify, concat or restart the process for you*
 
+### Deployment
+
+-   `gulp`
+
+*Gulp will now compile to all target OS's. Check the console output*
+*and the folder 'Build'*
+
 ## > Features
 
 -   Node.js, ES6, Built with [Electron](http://electron.atom.io/)
