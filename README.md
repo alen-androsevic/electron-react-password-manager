@@ -1,6 +1,7 @@
 # electron-react-password-manager
 
 ![](https://www.cs.cmu.edu/~cangiuli/img/angry.gif)
+
 *Are you tired of trying to remember or write down all your passwords?*
 
 ## > Installation
@@ -26,7 +27,7 @@
 -   Frontend built with [React](https://facebook.github.io/react/) And [React Bootstrap](https://react-bootstrap.github.io)
 -   Random salt for PBKD2F that is generated on first run
 -   Unique computer fingerprint used as a pepper for PBKD2F
--   up to 400k PBKD2F iterations
+-   up to 1.5 **million** PBKD2F iterations
 -   up to 2048bit AES passphrase encryption (aes-256-cbc)
 -   HMAC Authentication (Encrypt-then-MAC)
 -   CSPRNG initialization vectors
