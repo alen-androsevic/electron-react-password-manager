@@ -83,7 +83,7 @@ exports.generateHMAC = () => {
 }
 
 // How we encrypt folders
-exports.encryptFolder = () => {
+exports.encryptFolder = cb => {
   glob('./encryptedfolder/**', {}, function(er, files) {
     let removeFiles = []
 
@@ -113,11 +113,13 @@ exports.encryptFolder = () => {
     for (let i in removeFiles) {
       fs.unlink(removeFiles[i])
     }
+
+    cb()
   })
 }
 
 // How we decrypt folders
-exports.decryptFolder = () => {
+exports.decryptFolder = cb => {
   glob('./encryptedfolder/**', {}, function(er, files) {
     let removeFiles = []
 
@@ -148,8 +150,10 @@ exports.decryptFolder = () => {
     }
 
     for (let i in removeFiles) {
-      //fs.unlink(removeFiles[i])
+      fs.unlink(removeFiles[i])
     }
+
+    cb()
   })
 }
 

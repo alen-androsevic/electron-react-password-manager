@@ -7,6 +7,7 @@ const chkErr     = require('./error').chkErr
 const mkdirp     = require('mkdirp')
 const cryptoNode = require('crypto')
 const async      = require('async')
+const fs         = require('fs')
 
 let electron
 let callbackError
@@ -58,7 +59,7 @@ exports.init = (a, cb) => {
       }
       // Save encryption methods to database if run for first time
       electron.db.encryption.post(electron.crypt, (err, dbdata) => {
-        chkErr(err, cb)
+        chkErr(err, callbackError)
         exports.loginContinue(event, data)
         data = null // Attempt to null it out of memory :P?
       })
@@ -72,7 +73,7 @@ exports.init = (a, cb) => {
   // When frontend requests encryption of protected folder
   electron.ipcMain.on('encryptFolder', (event, data) => {
     crypto.encryptFolder((err) => {
-      chkErr(err, cb)
+      chkErr(err, callbackError)
       exports.sendMsg(event, true, 'Folder encrypted!', {id: data})
     })
   })
@@ -80,7 +81,7 @@ exports.init = (a, cb) => {
   // When frontend requests decryption of protected folder
   electron.ipcMain.on('decryptFolder', (event, data) => {
     crypto.decryptFolder((err) => {
-      chkErr(err, cb)
+      chkErr(err, callbackError)
       exports.sendMsg(event, true, 'Folder decrypted!', {id: data})
     })
   })
@@ -118,7 +119,7 @@ exports.init = (a, cb) => {
     },
     function(err, post) {
       electron.db.passwords.post(post, (err, data) => {
-        chkErr(err, cb)
+        chkErr(err, callbackError)
         exports.sendMsg(event, true, 'Password added!', {id: data})
       })
     })
@@ -147,7 +148,7 @@ exports.createIfNotExists = db => {
         txt += 'You can encrypt and decrypt this folder in the program when you are logged in'
 
         fs.writeFile('./encryptedfolder/readme.txt', txt, function(err) {
-          chkErr(err, cb)
+          chkErr(err, callbackError)
         })
       })
 
