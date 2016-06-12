@@ -3,6 +3,7 @@
 const crypto     = require('crypto')
 const timer      = require('./timer')
 const macaddress = require('macaddress')
+const chkErr     = require('./error').chkErr
 
 let electron
 
@@ -23,14 +24,15 @@ exports.generateKey = (passphrase, cb) => {
   electron.log('CSPRNG Salt(' + salt.length + ')')
 
   exports.generatePepper(salt, (err, pepper) => {
+    chkErr(err, cb)
+
     let time = new timer()
     const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
 
     electron.log('PBKDF2 Salt Hash (' + pbkdf2Salt.length + ')')
 
     crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, bytes, 'sha512', (err, hash) => {
-      if (err)
-        cb(err)
+      chkErr(err, cb)
 
       hash = hash.toString(electron.crypt.encryptMethod)
 
@@ -52,10 +54,12 @@ exports.generatePepper = (salt, cb) => {
 
   // We generate a pepper from the users mac address
   macaddress.one(function(err, mac) {
-    // And pbkdf2 (sync) it with a quarter of the iteration and bytes length of the program defaults
-    let pepper = crypto.pbkdf2Sync(mac, salt, iterations / 4, bytes / 4, 'sha512')
-    electron.log('Pepper Hash(' + pepper.length + ') Complete: ' + time.stop() + 'ms')
-    cb(null, pepper.toString(electron.crypt.encryptMethod))
+    // And pbkdf2 it with a quarter of the iteration and bytes length of the program defaults
+    crypto.pbkdf2(mac, salt, iterations / 4, bytes / 4, 'sha512', (err, pepper) => {
+      chkErr(err, cb)
+      electron.log('Pepper Hash(' + pepper.length + ') Complete: ' + time.stop() + 'ms')
+      cb(null, pepper.toString(electron.crypt.encryptMethod))
+    })
   })
 }
 
@@ -97,7 +101,7 @@ exports.decryptString = (string, cb) => {
   if (thisHmac !== thatHmac || noCorruption === 1) {
     // TODO: exception: login, create 2 services, exit program, tamper with the last password db file, re-open program: no errors
     electron.log(' --- HMAC TAMPERING!')
-    cb('HMAC TAMPER')
+    cb('HMAC TAMPER', '[ CORRUPT DATA ]')
     return
   }
 
