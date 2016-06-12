@@ -14,7 +14,6 @@ exports.init = a => {
 exports.generateKey = (passphrase, cb) => {
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
-  let pepper     = electron.db.salt.allSync()[0].pepper
   let iterations = electron.crypt.pbkd2f.iterations
   let bytes      = electron.crypt.pbkd2f.bytes
 
@@ -23,37 +22,40 @@ exports.generateKey = (passphrase, cb) => {
   electron.log('PBKDF2 Key Bytes: ' + bytes)
   electron.log('CSPRNG Salt(' + salt.length + ')')
 
-  let time = new timer()
-  const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
+  exports.generatePepper(salt, (err, pepper) => {
+    let time = new timer()
+    const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
 
-  electron.log('Pepper Hash (' + pepper.length + ')')
-  electron.log('PBKDF2 Salt Hash (' + pbkdf2Salt.length + ')')
+    electron.log('PBKDF2 Salt Hash (' + pbkdf2Salt.length + ')')
 
-  crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, bytes, 'sha512', (err, hash) => {
-    if (err)
-      cb(err)
+    crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, bytes, 'sha512', (err, hash) => {
+      if (err)
+        cb(err)
 
-    hash = hash.toString(electron.crypt.encryptMethod)
+      hash = hash.toString(electron.crypt.encryptMethod)
 
-    // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
-    electron.hash = crypto.createHash('sha256').update(hash).digest()
+      // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
+      electron.hash = crypto.createHash('sha256').update(hash).digest()
 
-    electron.log('PBKDF2(' + hash.length + ') Complete: ' + time.stop() + 'ms')
-    cb()
+      electron.log('PBKDF2(' + hash.length + ') Complete: ' + time.stop() + 'ms')
+      cb()
+    })
   })
 }
 
 // Generate a unique pepper for this computer
 exports.generatePepper = (salt, cb) => {
   // No database values have been created by the user yet, so these values will be from the program defaults
+  let time       = new timer()
   let iterations = electron.crypt.pbkd2f.iterations
   let bytes      = electron.crypt.pbkd2f.bytes
 
   // We generate a pepper from the users mac address
   macaddress.one(function(err, mac) {
-    // And pbkdf2 sync it with half the iteration and bytes length of the program defaults
-    let pepperHash = crypto.pbkdf2Sync(mac, salt, iterations / 2, bytes / 2, 'sha512')
-    cb(null, pepperHash.toString(electron.crypt.encryptMethod))
+    // And pbkdf2 (sync) it with a quarter of the iteration and bytes length of the program defaults
+    let pepper = crypto.pbkdf2Sync(mac, salt, iterations / 4, bytes / 4, 'sha512')
+    electron.log('Pepper Hash(' + pepper.length + ') Complete: ' + time.stop() + 'ms')
+    cb(null, pepper.toString(electron.crypt.encryptMethod))
   })
 }
 
@@ -107,13 +109,12 @@ exports.decryptString = (string, cb) => {
   try {
     plaintext += decryptor.final(electron.crypt.decryptMethod)
   } catch (e) {
-    if(e.toString().indexOf('EVP_DecryptFinal_ex:bad decrypt') >= 1) {
-      cb('WRONG PASSWORD')
-      return
-    }else{
+    if (e.toString().indexOf('EVP_DecryptFinal_ex:bad decrypt') >= 1) {
+      cb('DECRYPT FAIL')
+    } else {
       cb(e, null)
-      return
     }
+    return
   }
 
   cb(null, plaintext)

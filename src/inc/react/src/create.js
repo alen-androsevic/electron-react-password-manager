@@ -46,25 +46,25 @@ const CreateAccount = React.createClass({
 
     if (this.state.hashing == 1) {
       var pbkd2f = {
-        iterations: 300000,
+        iterations: 500000,
       }
     }
 
     if (this.state.hashing == 2) {
       var pbkd2f = {
-        iterations: 500000,
+        iterations: 700000,
       }
     }
 
     if (this.state.hashing == 3) {
       var pbkd2f = {
-        iterations: 700000,
+        iterations: 1000000,
       }
     }
 
     if (this.state.hashing == 4) {
       var pbkd2f = {
-        iterations: 900000,
+        iterations: 1500000,
       }
     }
 
@@ -101,10 +101,10 @@ const CreateAccount = React.createClass({
          <FormGroup controlId='formControlsSelect'>
           <ControlLabel>Hashing Strength</ControlLabel>
           <FormControl onChange={this.handleHashingChange} value={this.state.value} componentClass="select" placeholder="select">
-            <option value='1'>Light - 300k Iterations</option>
-            <option value='2'>Medium - 500k Iterations</option>
-            <option selected value='3'>Strong - 700k Iterations (recommended)</option>
-            <option value='4'>Impossible - 900k Iterations</option>
+            <option value='1'>Light - 500k Iterations</option>
+            <option value='2'>Medium - 700k Iterations</option>
+            <option selected value='3'>Strong - 1m Iterations (recommended)</option>
+            <option value='4'>Impossible - 1.5m Iterations</option>
           </FormControl>
         </FormGroup>
         <Button type='submit'>

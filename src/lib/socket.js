@@ -49,7 +49,6 @@ exports.init = (a, cb) => {
     // Override application data from user settings
     electron.crypt.bits              = parseInt(data.bits)
     electron.crypt.pbkd2f.iterations = parseInt(data.pbkd2f.iterations)
-    electron.crypt.pbkd2f.count      = parseInt(data.pbkd2f.count)
 
     // Check if passwords are same if first time run
     if (electron.firstTime) {
@@ -131,11 +130,8 @@ exports.createIfNotExists = db => {
           chkErr(err, callbackError)
           if (db.name === 'salt') {
             // First time the salt database has been created, lets populate it with all the CSPRNG functions from crypto
-            let salt = crypto.generateSalt()
-            crypto.generatePepper(salt, (err, pepper) => {
-              db.post({salt: salt, hmac: crypto.generateHMAC(), pepper}, (err, data) => {
-                chkErr(err, callbackError)
-              })
+            db.post({salt: crypto.generateSalt(), hmac: crypto.generateHMAC()}, (err, data) => {
+              chkErr(err, callbackError)
             })
           }
         })
@@ -210,7 +206,7 @@ exports.loginContinue = (event, data) => {
         return
       }
 
-      if (err === 'WRONG PASSWORD') {
+      if (err === 'DECRYPT FAIL') {
         exports.sendMsg(event, false, 'Wrong Password!')
         return
       }
