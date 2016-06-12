@@ -1,15 +1,15 @@
 'use strict'
 
-const React          = require('react')
-const ReactDOM       = require('react-dom')
-const Button         = require('react-bootstrap').Button
-const Popover        = require('react-bootstrap').Popover
-const Tooltip        = require('react-bootstrap').Tooltip
-const Modal          = require('react-bootstrap').Modal
-const OverlayTrigger = require('react-bootstrap').OverlayTrigger
-const FormGroup      = require('react-bootstrap').FormGroup
-const ControlLabel   = require('react-bootstrap').ControlLabel
-const FormControl    = require('react-bootstrap').FormControl
+const React                 = require('react')
+const ReactDOM              = require('react-dom')
+const Button                = require('react-bootstrap').Button
+const Popover               = require('react-bootstrap').Popover
+const Tooltip               = require('react-bootstrap').Tooltip
+const Modal                 = require('react-bootstrap').Modal
+const OverlayTrigger        = require('react-bootstrap').OverlayTrigger
+const FormGroup             = require('react-bootstrap').FormGroup
+const ControlLabel          = require('react-bootstrap').ControlLabel
+const FormControl           = require('react-bootstrap').FormControl
 
 const CreateAccount = React.createClass({
   getInitialState: function() {

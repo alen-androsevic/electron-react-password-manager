@@ -50,6 +50,7 @@
     "notification-shim": "^0.1.1",
     "pbkdf2": "^3.0.4",
     "react-bootstrap": "^0.29.4",
+    "react-password-strength-meter": "^1.0.5",
     "reactable": "^0.13.2",
     "rimraf": "^2.5.2"
   }

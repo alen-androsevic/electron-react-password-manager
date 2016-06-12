@@ -37,7 +37,12 @@ exports.generateKey = (passphrase, cb) => {
       hash = hash.toString(electron.crypt.encryptMethod)
 
       // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
-      electron.hash = crypto.createHash('sha256').update(hash).digest()
+      if (electron.crypt.bits === 256)
+        electron.hash = crypto.createHash('sha256').update(hash).digest()
+
+      // PBKDF2 sync the hash so we can use it with aes-128 as the key (else we get invalid key length)
+      if (electron.crypt.bits === 128)
+        electron.hash = crypto.pbkdf2Sync(hash, pbkdf2Salt, 1, 16, 'sha512')
 
       electron.log('PBKDF2(' + hash.length + ') Complete: ' + time.stop() + 'ms')
       cb()
