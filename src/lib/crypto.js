@@ -90,8 +90,8 @@ exports.encryptFolder = cb => {
     let removeFiles = []
 
     for (let i in files) {
-      // Check if the blobs are files
-      if (!path.extname(files[i]))
+      // Skip if directories
+      if (fs.lstatSync(files[i]).isDirectory())
         continue
 
       // Create the cipher for each file so the IV is randomized
