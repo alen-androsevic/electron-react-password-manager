@@ -4,6 +4,8 @@
 
 *Are you tired of trying to remember or write down all your passwords?*
 
+[Click here for a gifv demo](http://i.imgur.com/K0MBG8V.gifv)
+
 ## > Installation
 
 ### Downloads
