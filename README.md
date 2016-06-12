@@ -2,8 +2,6 @@
 
 *Yay another useless password manager!*
 
-**Currently broken!**
-
 ## > Installation
 
 ### Downloads
@@ -35,6 +33,9 @@
 -   No accounts just a password you come up with to rule them all
 -   Your password is your passphrase to unlock all your other passwords
 -   All of your data is stored **CLIENT** sided, **NO** server storage!
+
+## > Known Issues
+https://github.com/michaeldegroot/electron-react-password-manager/issues
 
 ## > Security Flowchart
 
