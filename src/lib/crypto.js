@@ -104,7 +104,17 @@ exports.decryptString = (string, cb) => {
 
   // Decrypt the ciphertext
   let plaintext = decryptor.update(cipherText, electron.crypt.encryptMethod, electron.crypt.decryptMethod)
-  plaintext += decryptor.final(electron.crypt.decryptMethod)
+  try {
+    plaintext += decryptor.final(electron.crypt.decryptMethod)
+  } catch (e) {
+    if(e.toString().indexOf('EVP_DecryptFinal_ex:bad decrypt') >= 1) {
+      cb('WRONG PASSWORD')
+      return
+    }else{
+      cb(e, null)
+      return
+    }
+  }
 
   cb(null, plaintext)
 }

@@ -207,11 +207,17 @@ exports.loginContinue = (event, data) => {
     crypto.decryptString(firstResult.password, (err, decrypted) => {
       if (err === 'HMAC TAMPER') {
         exports.sendMsg(event, false, 'Your password DB is corrupt')
-      } else {
-        chkErr(err, callbackError)
-        exports.sendMsg(event, true, 'Login succeeded, please wait..')
-        events.loadPage('index')
+        return
       }
+
+      if (err === 'WRONG PASSWORD') {
+        exports.sendMsg(event, false, 'Wrong Password!')
+        return
+      }
+
+      chkErr(err, callbackError)
+      exports.sendMsg(event, true, 'Login succeeded, please wait..')
+      events.loadPage('index')
     })
   })
 }
