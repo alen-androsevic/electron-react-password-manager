@@ -1,13 +1,15 @@
 'use strict'
 
-const crypto     = require('crypto')
-const timer      = require('./timer')
-const macaddress = require('macaddress')
-const chkErr     = require('./error').chkErr
-const glob       = require('glob')
-const path       = require('path')
-const fs         = require('fs')
-const os         = require('os')
+const crypto         = require('crypto')
+const timer          = require('./timer')
+const macaddress     = require('macaddress')
+const chkErr         = require('./error').chkErr
+const glob           = require('glob')
+const path           = require('path')
+const fs             = require('fs')
+const os             = require('os')
+const stream         = require('stream')
+const CombinedStream = require('combined-stream')
 
 let electron
 
@@ -92,7 +94,7 @@ exports.encryptFolder = cb => {
       if (!path.extname(files[i]))
         continue
 
-      // Create the cipher for each file
+      // Create the cipher for each file so the IV is randomized
       let cipher = exports.generateCipher()
 
       // Create the read/write stream and pipe output
@@ -101,13 +103,22 @@ exports.encryptFolder = cb => {
 
       // Prepend IV to filename
       let splitted = files[i].split('/')
-      let filename = cipher.IV.toString('hex') + '$' + splitted[splitted.length - 1]
+      let originalFilename = splitted[splitted.length - 1]
+      let filename = cipher.IV.toString('hex')
       splitted.pop()
       let filepath = splitted.join('/')
       files[i] = path.join(filepath, filename)
 
-      const output = fs.createWriteStream(files[i] + '.enc')
-      const stream = input.pipe(cipher.encrypt).pipe(output)
+      // Prepend filename to first line of the document
+      var prependFilename = new stream.Readable()
+      prependFilename.push(originalFilename + '\n')
+      prependFilename.push(null)
+      var combinedStream = CombinedStream.create()
+      combinedStream.append(prependFilename)
+      combinedStream.append(input)
+
+      const output = fs.createWriteStream(files[i])
+      const streamer = combinedStream.pipe(cipher.encrypt).pipe(output)
     }
 
     for (let i in removeFiles) {
@@ -124,29 +135,74 @@ exports.decryptFolder = cb => {
     let removeFiles = []
 
     for (let i in files) {
-      // Check if the blobs are files
-      if (!path.extname(files[i]))
+      // Skip if directories
+      if (fs.lstatSync(files[i]).isDirectory())
         continue
 
-      // Create the read/write stream and pipe output
+      // Make sure we are dealing with filenames without extensions (these are encrypted)
+      if (path.extname(files[i]))
+        continue
+
+      // The files should also not have been decrypted
+      if (files[i].indexOf('decrypted_') >= 1)
+        continue
+
+      // Create the read stream
       const input = fs.createReadStream(files[i])
+
+      // Mark files for removal
       removeFiles.push(files[i])
 
       // Remove IV from filename
       let splitted = files[i].split('/')
-      let IVAndFilename = splitted[splitted.length - 1].split('$')
-      let filename = IVAndFilename[1]
-      let IV = new Buffer(IVAndFilename[0], electron.crypt.encryptMethod)
+      let IV = splitted[splitted.length - 1]
+      IV = new Buffer(IV, electron.crypt.encryptMethod)
       splitted.pop()
       let filepath = splitted.join('/')
-
+      let randomBytes = crypto.randomBytes(electron.crypt.salt.randomBytes).toString(electron.crypt.encryptMethod)
+      let specialSnowflake = crypto.createHash('md5').update(randomBytes).digest(electron.crypt.encryptMethod)
+      let filename = 'decrypted_' + specialSnowflake
       files[i] = path.join(filepath, filename)
 
-      // Create the cipher
+      // Create the cipher from the stored IV
       let cipher = exports.generateCipher(IV)
 
-      const output = fs.createWriteStream(files[i].replace('.enc', ''))
+      // First step is to just decrypt the whole document
+      const output = fs.createWriteStream(files[i])
       const stream = input.pipe(cipher.decrypt).pipe(output)
+
+      // Then lets read the first line of the decrypted document
+      // This is the original filename
+      stream.on('finish', function() {
+        const decryptedDocument = fs.createReadStream(files[i])
+        let decryptedFilename
+
+        decryptedDocument.on('data', data => {
+          // Read the first line
+          decryptedFilename = data.toString('utf-8').split('\n')[0]
+
+          // And restore the original filename
+          fs.rename(path.join(filepath, filename), path.join(filepath, '_' + decryptedFilename), function(err) {
+            chkErr(err, cb)
+          })
+
+          // This is all we need really, lets stop reading the file
+          decryptedDocument.destroy()
+        })
+
+        // TODO: find out why the decryptedDocment.on('finish') does not work here
+        // This temp workaround is a ugly settimeout, which is risky for large files
+        setTimeout(() => {
+          let input = fs.createReadStream(path.join(filepath, '_' + decryptedFilename))
+          let output = fs.createWriteStream(path.join(filepath, decryptedFilename))
+          let finalstream = input.pipe(RemoveFirstLine()).pipe(output)
+
+          // Remove the first decrypted document, because it contains metadata
+          finalstream.on('finish', () => {
+            fs.unlink(path.join(filepath, '_' + decryptedFilename))
+          })
+        }, 500)
+      })
     }
 
     for (let i in removeFiles) {
@@ -246,4 +302,41 @@ exports.generateCipher = importedIV => {
     encrypt,
     decrypt,
   }
+}
+
+// TODO: put this in a module, it's ugly and doesn't belong in crypto.js
+const Transform = require('stream').Transform
+const util      = require('util')
+function RemoveFirstLine(args) {
+  if (!(this instanceof RemoveFirstLine)) {
+    return new RemoveFirstLine(args)
+  }
+  Transform.call(this, args)
+  this._buff = ''
+  this._removed = false
+}
+util.inherits(RemoveFirstLine, Transform)
+
+RemoveFirstLine.prototype._transform = function(chunk, encoding, done) {
+    if (this._removed) { // If already removed
+      this.push(chunk) // Just push through buffer
+    } else {
+      // Collect string into buffer
+      this._buff += chunk.toString()
+
+      // Check if string has newline symbol
+      if (this._buff.indexOf('\n') !== -1) {
+
+        // Push to stream skipping first line
+        this.push(this._buff.slice(this._buff.indexOf('\n') + 1))
+
+        // Clear string buffer
+        this._buff = null
+
+        // Mark as removed
+        this._removed = true
+      }
+    }
+
+    done()
 }

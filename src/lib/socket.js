@@ -240,7 +240,7 @@ exports.loginContinue = (event, data) => {
       }
 
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Login succeeded, please wait..')
+      exports.sendMsg(event, true, 'Login succeeded.')
       events.loadPage('index')
     })
   })
