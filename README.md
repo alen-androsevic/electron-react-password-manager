@@ -27,10 +27,11 @@
 -   Frontend built with [React](https://facebook.github.io/react/) And [React Bootstrap](https://react-bootstrap.github.io)
 -   Random salt for PBKD2F that is generated on first run
 -   Unique computer fingerprint used as a pepper for PBKD2F
+-   Can encrypt and decrypt folders with your passphrase
 -   up to 1.5 **million** PBKD2F iterations
 -   up to 2048bit AES passphrase encryption (aes-256-cbc)
 -   HMAC Authentication (Encrypt-then-MAC)
--   CSPRNG initialization vectors
+-   CSPRNG initialization vectors (randomized for each encryption!)
 -   Stores passwords, email and service name encrypted to a local database
 -   No accounts just a password you come up with to rule them all
 -   Your password is your passphrase to unlock all your other passwords

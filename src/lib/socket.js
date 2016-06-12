@@ -69,6 +69,21 @@ exports.init = (a, cb) => {
     data = null // Attempt to null it out of memory :P?
   })
 
+  // When frontend requests encryption of protected folder
+  electron.ipcMain.on('encryptFolder', (event, data) => {
+    crypto.encryptFolder((err) => {
+      chkErr(err, cb)
+      exports.sendMsg(event, true, 'Folder encrypted!', {id: data})
+    })
+  })
+
+  // When frontend requests decryption of protected folder
+  electron.ipcMain.on('decryptFolder', (event, data) => {
+    crypto.decryptFolder((err) => {
+      chkErr(err, cb)
+      exports.sendMsg(event, true, 'Folder decrypted!', {id: data})
+    })
+  })
 
   // When frontend requests encryption data
   electron.ipcMain.on('requestEncryption', (event, data) => {
@@ -125,6 +140,18 @@ exports.createIfNotExists = db => {
       }
     } else {
       electron.firstTime = true
+
+      // We create the encrypted folder if it does not exists, and place a readme
+      mkdirp('./encryptedfolder', err => {
+        let txt = 'You can put files in here that will be encrypted with your master password.'
+        txt += 'You can encrypt and decrypt this folder in the program when you are logged in'
+
+        fs.writeFile('./encryptedfolder/readme.txt', txt, function(err) {
+          chkErr(err, cb)
+        })
+      })
+
+      // Create the database folder if it does not exists
       mkdirp('./db', err => {
         db.create((err) => {
           chkErr(err, callbackError)

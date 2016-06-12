@@ -129,6 +129,30 @@ const AddPasswordForm = React.createClass({
   },
 })
 
+// The encrypt button
+const EncryptButton = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <Button onClick={this.encrypt} type='submit'>
+          Encrypt Data
+        </Button>
+        <Button onClick={this.decrypt} type='submit'>
+          Decrypt Data
+        </Button>
+      </div>
+    )
+  },
+
+  encrypt() {
+    ipcRenderer.send('encryptFolder')
+  },
+
+  decrypt() {
+    ipcRenderer.send('decryptFolder')
+  },
+})
+
 // The add password button
 const AddPasswordButton = React.createClass({
   render: function() {
@@ -173,7 +197,7 @@ const Main = React.createClass({
     return (
       <div>
         <h1>Password App</h1>
-        <AddPasswordButton />
+        <AddPasswordButton /><EncryptButton />
         <TableCreate passwords={this.props.passwords} />
       </div>
     )

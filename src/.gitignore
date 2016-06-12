@@ -7,3 +7,4 @@ db
 /inc/react/build
 /inc/html/build
 build/*
+encryptedfolder/*
