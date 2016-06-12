@@ -1,6 +1,7 @@
 # electron-react-password-manager
 
-*Yay another useless password manager!*
+![](https://www.cs.cmu.edu/~cangiuli/img/angry.gif)
+*Are you tired of trying to remember or write down all your passwords?*
 
 ## > Installation
 
