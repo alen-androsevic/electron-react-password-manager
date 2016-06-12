@@ -4,8 +4,6 @@
 
 *Are you tired of trying to remember or write down all your passwords?*
 
-[Click here for a gifv demo](http://i.imgur.com/K0MBG8V.gifv)
-
 ## > Installation
 
 ### Downloads
@@ -36,7 +34,7 @@
 -   Frontend built with [React](https://facebook.github.io/react/) And [React Bootstrap](https://react-bootstrap.github.io)
 -   Random salt for PBKD2F that is generated on first run
 -   Unique computer fingerprint used as a pepper for PBKD2F
--   Can encrypt and decrypt folders with your passphrase
+-   Can encrypt and decrypt folders with your passphrase [(demo)](http://i.imgur.com/K0MBG8V.gifv)
 -   up to 1.5 **million** PBKD2F iterations
 -   up to 2048bit AES passphrase encryption (aes-256-cbc)
 -   HMAC Authentication (Encrypt-then-MAC)
