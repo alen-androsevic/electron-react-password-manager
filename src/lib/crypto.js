@@ -7,6 +7,7 @@ const chkErr     = require('./error').chkErr
 const glob       = require('glob')
 const path       = require('path')
 const fs         = require('fs')
+const os         = require('os')
 
 let electron
 
@@ -84,23 +85,33 @@ exports.generateHMAC = () => {
 // How we encrypt folders
 exports.encryptFolder = () => {
   glob('./encryptedfolder/**', {}, function(er, files) {
-    // Create the cipher
-    let cipher = exports.generateCipher()
+    let removeFiles = []
 
     for (let i in files) {
       // Check if the blobs are files
       if (!path.extname(files[i]))
         continue
 
+      // Create the cipher for each file
+      let cipher = exports.generateCipher()
+
       // Create the read/write stream and pipe output
       const input = fs.createReadStream(files[i])
+      removeFiles.push(files[i])
+
+      // Prepend IV to filename
+      let splitted = files[i].split('/')
+      let filename = cipher.IV.toString('hex') + '$' + splitted[splitted.length - 1]
+      splitted.pop()
+      let filepath = splitted.join('/')
+      files[i] = path.join(filepath, filename)
+
       const output = fs.createWriteStream(files[i] + '.enc')
       const stream = input.pipe(cipher.encrypt).pipe(output)
+    }
 
-      // Remove the unencrypted file on encryption finish
-      stream.on('finish', () => {
-        fs.unlink(files[i])
-      })
+    for (let i in removeFiles) {
+      fs.unlink(removeFiles[i])
     }
   })
 }
@@ -108,8 +119,7 @@ exports.encryptFolder = () => {
 // How we decrypt folders
 exports.decryptFolder = () => {
   glob('./encryptedfolder/**', {}, function(er, files) {
-    // Create the cipher
-    let cipher = exports.generateCipher()
+    let removeFiles = []
 
     for (let i in files) {
       // Check if the blobs are files
@@ -118,13 +128,27 @@ exports.decryptFolder = () => {
 
       // Create the read/write stream and pipe output
       const input = fs.createReadStream(files[i])
+      removeFiles.push(files[i])
+
+      // Remove IV from filename
+      let splitted = files[i].split('/')
+      let IVAndFilename = splitted[splitted.length - 1].split('$')
+      let filename = IVAndFilename[1]
+      let IV = new Buffer(IVAndFilename[0], electron.crypt.encryptMethod)
+      splitted.pop()
+      let filepath = splitted.join('/')
+
+      files[i] = path.join(filepath, filename)
+
+      // Create the cipher
+      let cipher = exports.generateCipher(IV)
+
       const output = fs.createWriteStream(files[i].replace('.enc', ''))
       const stream = input.pipe(cipher.decrypt).pipe(output)
+    }
 
-      // Remove the encrypted file on decryption finish
-      stream.on('finish', () => {
-        fs.unlink(files[i])
-      })
+    for (let i in removeFiles) {
+      //fs.unlink(removeFiles[i])
     }
   })
 }
