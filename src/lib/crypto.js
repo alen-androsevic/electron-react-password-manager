@@ -2,7 +2,6 @@
 
 const crypto     = require('crypto')
 const timer      = require('./timer')
-const spawn      = require('threads').spawn
 const macaddress = require('macaddress')
 
 let electron
