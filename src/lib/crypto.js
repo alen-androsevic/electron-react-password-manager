@@ -7,10 +7,10 @@ const chkErr         = require('./error').chkErr
 const glob           = require('glob')
 const path           = require('path')
 const fs             = require('fs')
-const os             = require('os')
 const stream         = require('stream')
 const CombinedStream = require('combined-stream')
 const machineUUID    = require('machine-uuid')
+const async          = require('async')
 
 let electron
 
@@ -20,43 +20,41 @@ exports.init = a => {
 
 // How the secret key is generated
 exports.generateKey = (passphrase, cb) => {
+  let time       = new timer()
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
   let iterations = electron.crypt.pbkd2f.iterations
 
   electron.log('AES Encryption Level: ' + electron.crypt.bits + 'bits')
-  electron.log('PBKDF2 Iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('PBKDF2 Key Bytes: ' + electron.crypt.bits / 16)
-  electron.log('CSPRNG Salt(' + salt.length + ')')
+  electron.log('PBKDF2 Iterations: '    + iterations.toLocaleString('en-US'))
+  electron.log('PBKDF2 Key Bytes: '     + electron.crypt.bits / 16)
+  electron.log('CSPRNG Salt('           + salt.length + ')')
 
-  exports.generatePepper(salt, (err, pepper) => {
-    chkErr(err, cb)
-
-    let time = new timer()
-    const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
-    electron.log('PBKDF2 Salt Hash(' + pbkdf2Salt.length + ')')
-
-    crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
-      chkErr(err, cb)
-      electron.hash = hash.toString(electron.crypt.encryptMethod)
-      console.log(electron.hash.length,"-",electron.hash)
-      electron.log('PBKDF2(' + electron.hash.length + ') Complete: ' + time.stop() + 'ms')
-      cb()
-    })
-  })
+  async.waterfall([
+    // Generate the pepper
+    (callback) => {
+      exports.generatePepper(salt, (err, pepper) => {
+        callback(null, pepper)
+      })
+    },
+    // And key derive
+    (pepper, callback) => {
+      crypto.pbkdf2(passphrase, (pepper + salt), iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
+        chkErr(err, cb)
+        electron.hash = hash.toString(electron.crypt.encryptMethod)
+        electron.log('Secret Key Hash(' + electron.hash.length + ') Complete: ' + time.stop() + 'ms')
+        cb()
+      })
+    },
+  ])
 }
 
 // Generate a unique pepper for this computer
 exports.generatePepper = (salt, cb) => {
-  // No database values have been created by the user yet, so these values will be from the program defaults
-  let time       = new timer()
-  let iterations = electron.crypt.pbkd2f.iterations
-  let bytes      = electron.crypt.pbkd2f.bytes
-
   // We generate a pepper from the users mac address and machine uuid
   machineUUID(uuid => {
     macaddress.one(function(err, mac) {
-      let pepper = mac + '$' + uuid
+      let pepper = mac + uuid
       cb(null, pepper)
     })
   })

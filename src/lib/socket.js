@@ -134,38 +134,71 @@ exports.init = (a, cb) => {
 
 // This checks if a database exists and if not creates one, also some custom action for specific databases
 exports.createIfNotExists = db => {
-  db.exists((exists) => {
-    if (exists) {
-      if (db.allSync().length === 0) {
-        electron.firstTime = true
+  async.waterfall([
+    (callback) => {
+      // Check if database exists
+      db.exists((exists) => {
+        callback(null, exists)
+      })
+    },
+
+    (exists, callback) => {
+       // Check if database does not exists and continue if so
+      if (exists) {
+        if (db.allSync().length === 0)
+          electron.firstTime = true
+      } else {
+        callback()
       }
-    } else {
+    },
+
+    (callback) => {
+      // We now expect this is the first run
       electron.firstTime = true
 
-      // We create the encrypted folder if it does not exists, and place a readme
+      // Create the encrypted folder
       mkdirp('./encryptedfolder', err => {
-        let txt = 'You can put files in here that will be encrypted with your master password.'
-        txt += 'You can encrypt and decrypt this folder in the program when you are logged in'
-
-        fs.writeFile('./encryptedfolder/readme.txt', txt, function(err) {
-          chkErr(err, callbackError)
-        })
+        chkErr(err, callbackError)
+        callback()
       })
+    },
 
-      // Create the database folder if it does not exists
+    (callback) => {
+      // And then create a readme
+      let txt = 'You can put files in here that will be encrypted with your master password.\n'
+      txt += 'You can encrypt and decrypt this folder in the password manager when you are logged in'
+
+      fs.writeFile('./encryptedfolder/readme.txt', txt, err => {
+        chkErr(err, callbackError)
+      })
+      callback()
+    },
+
+    (callback) => {
+      // Create the database folder
       mkdirp('./db', err => {
-        db.create((err) => {
-          chkErr(err, callbackError)
-          if (db.name === 'salt') {
-            // First time the salt database has been created, lets populate it with all the CSPRNG functions from crypto
-            db.post({salt: crypto.generateSalt(), hmac: crypto.generateHMAC()}, (err, data) => {
-              chkErr(err, callbackError)
-            })
-          }
-        })
+        chkErr(err, callbackError)
+        callback()
       })
-    }
-  })
+    },
+
+    (callback) => {
+      // Create the actual database
+      db.create((err) => {
+        chkErr(err, callbackError)
+        callback()
+      })
+    },
+
+    (callback) => {
+      // First time the salt database has been created, lets populate it with all the CSPRNG functions from crypto
+      if (db.name === 'salt') {
+        db.post({salt: crypto.generateSalt(), hmac: crypto.generateHMAC()}, (err, data) => {
+          chkErr(err, callbackError)
+        })
+      }
+    },
+  ])
 }
 
 // Get all password data from database
