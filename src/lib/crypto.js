@@ -27,19 +27,18 @@ exports.generateKey = (passphrase, cb) => {
 
   electron.log('AES Encryption Level: ' + electron.crypt.bits + 'bits')
   electron.log('PBKDF2 Iterations: '    + iterations.toLocaleString('en-US'))
-  electron.log('PBKDF2 Key Bytes: '     + electron.crypt.bits / 16)
   electron.log('CSPRNG Salt('           + salt.length + ')')
 
   async.waterfall([
     // Generate the pepper
     (callback) => {
-      exports.generatePepper(salt, (err, pepper) => {
+      exports.generatePepper((err, pepper) => {
         callback(null, pepper)
       })
     },
     // And key derive
     (pepper, callback) => {
-      crypto.pbkdf2(passphrase, (pepper + salt), iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
+      crypto.pbkdf2(passphrase + pepper, salt, iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
         chkErr(err, cb)
         electron.hash = hash.toString(electron.crypt.encryptMethod)
         electron.log('Secret Key Hash(' + electron.hash.length + ') Complete: ' + time.stop() + 'ms')
@@ -50,7 +49,7 @@ exports.generateKey = (passphrase, cb) => {
 }
 
 // Generate a unique pepper for this computer
-exports.generatePepper = (salt, cb) => {
+exports.generatePepper = cb => {
   // We generate a pepper from the users mac address and machine uuid
   machineUUID(uuid => {
     macaddress.one(function(err, mac) {
@@ -82,7 +81,7 @@ exports.encryptFolder = cb => {
         continue
 
       // Create the cipher for each file so the IV is randomized
-      let cipher = exports.generateCipher()
+      let cipher = exports.generateCiphers()
 
       // Create the read/write stream and pipe output
       const input = fs.createReadStream(files[i])
@@ -155,7 +154,7 @@ exports.decryptFolder = cb => {
       files[i] = path.join(filepath, filename)
 
       // Create the cipher from the stored IV
-      let cipher = exports.generateCipher(IV)
+      let cipher = exports.generateCiphers(IV)
 
       // First step is to just decrypt the whole document
       const output = fs.createWriteStream(files[i])
@@ -213,7 +212,7 @@ exports.decryptString = (string, cb) => {
   let hmac = cipherBlob[2]
 
   // Get the stored HMAC secret
-  // And create a HMAC from the secret with the ciphertext and IV
+  // And create a HMAC from the secret HMAC with the ciphertext and IV
   let chmac = crypto.createHmac('sha512', electron.db.salt.allSync()[0].hmac)
   chmac.update(cipherText)
   chmac.update(IV.toString(electron.crypt.encryptMethod))
@@ -237,7 +236,7 @@ exports.decryptString = (string, cb) => {
   }
 
   // Create the decipher
-  let cipher = exports.generateCipher(IV)
+  let cipher = exports.generateCiphers(IV)
 
   // Decrypt the ciphertext
   let plaintext = cipher.decrypt.update(cipherText, electron.crypt.encryptMethod, electron.crypt.decryptMethod)
@@ -259,7 +258,7 @@ exports.decryptString = (string, cb) => {
 // How we encrypt strings
 exports.encryptString = (string, cb) => {
   // Create the cipher
-  let cipher = exports.generateCipher()
+  let cipher = exports.generateCiphers()
 
   // Encrypt the string
   var cipherText = cipher.encrypt.update(string, electron.crypt.decryptMethod, electron.crypt.encryptMethod)
@@ -273,7 +272,7 @@ exports.encryptString = (string, cb) => {
   cb(null, cipherText + '$' + cipher.IV.toString(electron.crypt.encryptMethod) + '$' + hmac.digest(electron.crypt.encryptMethod))
 }
 
-exports.generateCipher = importedIV => {
+exports.generateCiphers = importedIV => {
   // Use CSPRNG to generate unique bytes for the IV
   let IV = new Buffer(crypto.randomBytes(16))
 
