@@ -50,7 +50,7 @@ https://github.com/michaeldegroot/electron-react-password-manager/issues
 ## > Security Flowchart
 
 *Because obscurity is no security*
-![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart6.jpg)
+![](https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/project%20related/flowchart7.jpg)
 
 ## > Showcase
 

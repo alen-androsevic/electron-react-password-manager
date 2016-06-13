@@ -10,6 +10,7 @@ const fs             = require('fs')
 const os             = require('os')
 const stream         = require('stream')
 const CombinedStream = require('combined-stream')
+const machineUUID    = require('machine-uuid')
 
 let electron
 
@@ -22,11 +23,10 @@ exports.generateKey = (passphrase, cb) => {
   electron.crypt = electron.db.encryption.allSync()[0]
   let salt       = electron.db.salt.allSync()[0].salt
   let iterations = electron.crypt.pbkd2f.iterations
-  let bytes      = electron.crypt.pbkd2f.bytes
 
   electron.log('AES Encryption Level: ' + electron.crypt.bits + 'bits')
   electron.log('PBKDF2 Iterations: ' + iterations.toLocaleString('en-US'))
-  electron.log('PBKDF2 Key Bytes: ' + bytes)
+  electron.log('PBKDF2 Key Bytes: ' + electron.crypt.bits / 16)
   electron.log('CSPRNG Salt(' + salt.length + ')')
 
   exports.generatePepper(salt, (err, pepper) => {
@@ -34,23 +34,13 @@ exports.generateKey = (passphrase, cb) => {
 
     let time = new timer()
     const pbkdf2Salt = crypto.createHash('sha512').update(pepper + passphrase + salt).digest(electron.crypt.encryptMethod)
+    electron.log('PBKDF2 Salt Hash(' + pbkdf2Salt.length + ')')
 
-    electron.log('PBKDF2 Salt Hash (' + pbkdf2Salt.length + ')')
-
-    crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, bytes, 'sha512', (err, hash) => {
+    crypto.pbkdf2(passphrase, pbkdf2Salt, iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
       chkErr(err, cb)
-
-      hash = hash.toString(electron.crypt.encryptMethod)
-
-      // Sha256 the hash so we can use it with aes-256 as the key (else we get invalid key length)
-      if (electron.crypt.bits === 256)
-        electron.hash = crypto.createHash('sha256').update(hash).digest()
-
-      // PBKDF2 sync the hash so we can use it with aes-128 as the key (else we get invalid key length)
-      if (electron.crypt.bits === 128)
-        electron.hash = crypto.pbkdf2Sync(hash, pbkdf2Salt, 1, 16, 'sha512')
-
-      electron.log('PBKDF2(' + hash.length + ') Complete: ' + time.stop() + 'ms')
+      electron.hash = hash.toString(electron.crypt.encryptMethod)
+      console.log(electron.hash.length,"-",electron.hash)
+      electron.log('PBKDF2(' + electron.hash.length + ') Complete: ' + time.stop() + 'ms')
       cb()
     })
   })
@@ -63,13 +53,11 @@ exports.generatePepper = (salt, cb) => {
   let iterations = electron.crypt.pbkd2f.iterations
   let bytes      = electron.crypt.pbkd2f.bytes
 
-  // We generate a pepper from the users mac address
-  macaddress.one(function(err, mac) {
-    // And pbkdf2 it with a quarter of the iteration and bytes length of the program defaults
-    crypto.pbkdf2(mac, salt, iterations / 4, bytes / 4, 'sha512', (err, pepper) => {
-      chkErr(err, cb)
-      electron.log('Pepper Hash(' + pepper.length + ') Complete: ' + time.stop() + 'ms')
-      cb(null, pepper.toString(electron.crypt.encryptMethod))
+  // We generate a pepper from the users mac address and machine uuid
+  machineUUID(uuid => {
+    macaddress.one(function(err, mac) {
+      let pepper = mac + '$' + uuid
+      cb(null, pepper)
     })
   })
 }
@@ -85,6 +73,7 @@ exports.generateHMAC = () => {
 }
 
 // How we encrypt folders
+// TODO: Try to have one pipe for the whole operation, not sure if this is even possible
 exports.encryptFolder = cb => {
   glob('./encryptedfolder/**', {}, function(er, files) {
     let removeFiles = []
@@ -99,6 +88,8 @@ exports.encryptFolder = cb => {
 
       // Create the read/write stream and pipe output
       const input = fs.createReadStream(files[i])
+
+      // Mark file for deletion
       removeFiles.push(files[i])
 
       // Prepend IV to filename
@@ -117,6 +108,7 @@ exports.encryptFolder = cb => {
       combinedStream.append(prependFilename)
       combinedStream.append(input)
 
+      // Pipe to write stream
       const output = fs.createWriteStream(files[i])
       const streamer = combinedStream.pipe(cipher.encrypt).pipe(output)
     }
@@ -143,8 +135,8 @@ exports.decryptFolder = cb => {
       if (path.extname(files[i]))
         continue
 
-      // The files should also not have been decrypted
-      if (files[i].indexOf('decrypted_') >= 1)
+      // The file should not be in the process of being decrypted
+      if (files[i].indexOf('decrypting_') >= 1)
         continue
 
       // Create the read stream
@@ -161,7 +153,7 @@ exports.decryptFolder = cb => {
       let filepath = splitted.join('/')
       let randomBytes = crypto.randomBytes(electron.crypt.salt.randomBytes).toString(electron.crypt.encryptMethod)
       let specialSnowflake = crypto.createHash('md5').update(randomBytes).digest(electron.crypt.encryptMethod)
-      let filename = 'decrypted_' + specialSnowflake
+      let filename = 'decrypting_' + specialSnowflake
       files[i] = path.join(filepath, filename)
 
       // Create the cipher from the stored IV
@@ -182,7 +174,7 @@ exports.decryptFolder = cb => {
           decryptedFilename = data.toString('utf-8').split('\n')[0]
 
           // And restore the original filename
-          fs.rename(path.join(filepath, filename), path.join(filepath, '_' + decryptedFilename), function(err) {
+          fs.rename(path.join(filepath, filename), path.join(filepath, 'decrypted_' + decryptedFilename), function(err) {
             chkErr(err, cb)
           })
 
@@ -193,15 +185,15 @@ exports.decryptFolder = cb => {
         // TODO: find out why the decryptedDocment.on('finish') does not work here
         // This temp workaround is a ugly settimeout, which is risky for large files
         setTimeout(() => {
-          let input = fs.createReadStream(path.join(filepath, '_' + decryptedFilename))
+          let input = fs.createReadStream(path.join(filepath, 'decrypted_' + decryptedFilename))
           let output = fs.createWriteStream(path.join(filepath, decryptedFilename))
           let finalstream = input.pipe(RemoveFirstLine()).pipe(output)
 
           // Remove the first decrypted document, because it contains metadata
           finalstream.on('finish', () => {
-            fs.unlink(path.join(filepath, '_' + decryptedFilename))
+            fs.unlink(path.join(filepath, 'decrypted_' + decryptedFilename))
           })
-        }, 500)
+        }, 1500)
       })
     }
 
@@ -311,32 +303,34 @@ function RemoveFirstLine(args) {
   if (!(this instanceof RemoveFirstLine)) {
     return new RemoveFirstLine(args)
   }
+
   Transform.call(this, args)
   this._buff = ''
   this._removed = false
 }
+
 util.inherits(RemoveFirstLine, Transform)
 
 RemoveFirstLine.prototype._transform = function(chunk, encoding, done) {
-    if (this._removed) { // If already removed
-      this.push(chunk) // Just push through buffer
-    } else {
-      // Collect string into buffer
-      this._buff += chunk.toString()
+  if (this._removed) { // If already removed
+    this.push(chunk) // Just push through buffer
+  } else {
+    // Collect string into buffer
+    this._buff += chunk.toString()
 
-      // Check if string has newline symbol
-      if (this._buff.indexOf('\n') !== -1) {
+    // Check if string has newline symbol
+    if (this._buff.indexOf('\n') !== -1) {
 
-        // Push to stream skipping first line
-        this.push(this._buff.slice(this._buff.indexOf('\n') + 1))
+      // Push to stream skipping first line
+      this.push(this._buff.slice(this._buff.indexOf('\n') + 1))
 
-        // Clear string buffer
-        this._buff = null
+      // Clear string buffer
+      this._buff = null
 
-        // Mark as removed
-        this._removed = true
-      }
+      // Mark as removed
+      this._removed = true
     }
+  }
 
-    done()
+  done()
 }
