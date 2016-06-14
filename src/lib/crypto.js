@@ -36,12 +36,15 @@ exports.generateKey = (passphrase, cb) => {
         callback(null, pepper)
       })
     },
-    // And key derive
+    // And key derive before sha512'ing the password
     (pepper, callback) => {
-      crypto.pbkdf2(passphrase + pepper, salt, iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
+      let password = pepper + passphrase
+      crypto.pbkdf2(password, salt, iterations, electron.crypt.bits / 16, 'sha512', (err, hash) => {
         chkErr(err, cb)
         electron.hash = hash.toString(electron.crypt.encryptMethod)
         electron.log('Secret Key Hash(' + electron.hash.length + ') Complete: ' + time.stop() + 'ms')
+        password = null
+        hash = null
         cb()
       })
     },
@@ -52,7 +55,7 @@ exports.generateKey = (passphrase, cb) => {
 exports.generatePepper = cb => {
   // We generate a pepper from the users mac address and machine uuid
   machineUUID(uuid => {
-    macaddress.one(function(err, mac) {
+    macaddress.one((err, mac) => {
       let pepper = mac + uuid
       cb(null, pepper)
     })
@@ -72,7 +75,8 @@ exports.generateHMAC = () => {
 // How we encrypt folders
 // TODO: Try to have one pipe for the whole operation, not sure if this is even possible
 exports.encryptFolder = cb => {
-  glob('./encryptedfolder/**', {}, function(er, files) {
+  glob('./encryptedfolder/**', {}, (err, files) => {
+    chkErr(err, cb)
     let removeFiles = []
 
     for (let i in files) {
@@ -120,7 +124,8 @@ exports.encryptFolder = cb => {
 
 // How we decrypt folders
 exports.decryptFolder = cb => {
-  glob('./encryptedfolder/**', {}, function(er, files) {
+  glob('./encryptedfolder/**', {}, (err, files) => {
+    chkErr(err, cb)
     let removeFiles = []
 
     for (let i in files) {
@@ -160,37 +165,37 @@ exports.decryptFolder = cb => {
       const output = fs.createWriteStream(files[i])
       const stream = input.pipe(cipher.decrypt).pipe(output)
 
-      // Then lets read the first line of the decrypted document
-      // This is the original filename
-      stream.on('finish', function() {
+      stream.on('finish', () => {
+        // Then lets read the decrypted document
         const decryptedDocument = fs.createReadStream(files[i])
         let decryptedFilename
+        let decryptedData = ''
 
+        // Add the stream data to a string
         decryptedDocument.on('data', data => {
-          // Read the first line
-          decryptedFilename = data.toString('utf-8').split('\n')[0]
-
-          // And restore the original filename
-          fs.rename(path.join(filepath, filename), path.join(filepath, 'decrypted_' + decryptedFilename), function(err) {
-            chkErr(err, cb)
-          })
-
-          // This is all we need really, lets stop reading the file
-          decryptedDocument.destroy()
+          decryptedData += data
         })
 
-        // TODO: find out why the decryptedDocment.on('finish') does not work here
-        // This temp workaround is a ugly settimeout, which is risky for large files
-        setTimeout(() => {
-          let input = fs.createReadStream(path.join(filepath, 'decrypted_' + decryptedFilename))
-          let output = fs.createWriteStream(path.join(filepath, decryptedFilename))
-          let finalstream = input.pipe(RemoveFirstLine()).pipe(output)
+        decryptedDocument.on('end', () => {
+          // Read the first line
+          // This is the original filename
+          decryptedFilename = decryptedData.toString('utf-8').split('\n')[0]
 
-          // Remove the first decrypted document, because it contains metadata
-          finalstream.on('finish', () => {
-            fs.unlink(path.join(filepath, 'decrypted_' + decryptedFilename))
+          // And restore the original filename with prefix 'decrypted_'
+          fs.rename(path.join(filepath, filename), path.join(filepath, 'decrypted_' + decryptedFilename), err => {
+            chkErr(err, cb)
+
+            // Pipe it back to the orginal filename
+            let input = fs.createReadStream(path.join(filepath, 'decrypted_' + decryptedFilename))
+            let output = fs.createWriteStream(path.join(filepath, decryptedFilename))
+            let finalstream = input.pipe(RemoveFirstLine()).pipe(output)
+
+            // And remove the 'decrypted_' file
+            finalstream.on('finish', () => {
+              fs.unlink(path.join(filepath, 'decrypted_' + decryptedFilename))
+            })
           })
-        }, 1500)
+        })
       })
     }
 

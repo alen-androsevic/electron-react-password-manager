@@ -35,7 +35,7 @@
 -   Random salt for PBKD2F that is generated on first run
 -   Unique computer fingerprint used as a pepper for PBKD2F
 -   Can encrypt and decrypt folders with your passphrase [(demo)](http://i.imgur.com/K0MBG8V.gifv)
--   up to 1.5 **million** PBKD2F iterations
+-   up to 2.5 **million** PBKD2F iterations
 -   up to 2048bit AES passphrase encryption (aes-256-cbc)
 -   HMAC Authentication (Encrypt-then-MAC)
 -   CSPRNG initialization vectors (randomized for each encryption!)
