@@ -11,7 +11,9 @@ const stream         = require('stream')
 const CombinedStream = require('combined-stream')
 const machineUUID    = require('machine-uuid')
 const async          = require('async')
-
+const readline       = require('linebyline')
+const zipdir         = require('zip-dir')
+const unzip          = require('unzip')
 let electron
 
 exports.init = a => {
@@ -79,46 +81,40 @@ exports.encryptFolder = cb => {
     chkErr(err, cb)
     let removeFiles = []
 
-    for (let i in files) {
-      // Skip if directories
-      if (fs.lstatSync(files[i]).isDirectory())
-        continue
+    // Create the cipher for the zip so the IV is randomized
+    let cipher = exports.generateCiphers()
 
-      // Create the cipher for each file so the IV is randomized
-      let cipher = exports.generateCiphers()
+    zipdir('./encryptedfolder', {
+      saveTo: './encryptedfolder/zipped.zip',
+    }, function(err, buffer) {
+      if (err)
+        throw new Error(err)
 
-      // Create the read/write stream and pipe output
-      const input = fs.createReadStream(files[i])
+      for (let i in files) {
+        // Mark file for deletion
+        removeFiles.push(files[i])
+      }
 
-      // Mark file for deletion
-      removeFiles.push(files[i])
+      fs.writeFile('metakappa', cipher.IV, () => {
+        const input = fs.createReadStream('./encryptedfolder/zipped.zip')
+        const output = fs.createWriteStream('./encryptedfolder/encrypted.zip')
+        const streamer = input.pipe(cipher.encrypt).pipe(output)
 
-      // Prepend IV to filename
-      let splitted = files[i].split('/')
-      let originalFilename = splitted[splitted.length - 1]
-      let filename = cipher.IV.toString('hex')
-      splitted.pop()
-      let filepath = splitted.join('/')
-      files[i] = path.join(filepath, filename)
+        streamer.on('finish', function() {
+          for (let i in removeFiles) {
+            // Skip if directories
+            if (fs.lstatSync(files[i]).isDirectory())
+              continue
 
-      // Prepend filename to first line of the document
-      var prependFilename = new stream.Readable()
-      prependFilename.push(originalFilename + '\n')
-      prependFilename.push(null)
-      var combinedStream = CombinedStream.create()
-      combinedStream.append(prependFilename)
-      combinedStream.append(input)
+            fs.unlink(removeFiles[i])
+          }
 
-      // Pipe to write stream
-      const output = fs.createWriteStream(files[i])
-      const streamer = combinedStream.pipe(cipher.encrypt).pipe(output)
-    }
+          fs.unlink('./encryptedfolder/zipped.zip')
 
-    for (let i in removeFiles) {
-      fs.unlink(removeFiles[i])
-    }
-
-    cb()
+          cb()
+        })
+      })
+    })
   })
 }
 
@@ -126,82 +122,25 @@ exports.encryptFolder = cb => {
 exports.decryptFolder = cb => {
   glob('./encryptedfolder/**', {}, (err, files) => {
     chkErr(err, cb)
-    let removeFiles = []
 
-    for (let i in files) {
-      // Skip if directories
-      if (fs.lstatSync(files[i]).isDirectory())
-        continue
+    // Create the cipher from the stored IV
+    let cipher = exports.generateCiphers(fs.readFileSync('metakappa'))
 
-      // Make sure we are dealing with filenames without extensions (these are encrypted)
-      if (path.extname(files[i]))
-        continue
+    // Create the read stream
+    const input = fs.createReadStream('./encryptedfolder/encrypted.zip')
 
-      // The file should not be in the process of being decrypted
-      if (files[i].indexOf('decrypting_') >= 1)
-        continue
+    // First step is to just decrypt the whole zip
+    const output = fs.createWriteStream('./encryptedfolder/zipped.zip')
+    const stream = input.pipe(cipher.decrypt).pipe(output)
 
-      // Create the read stream
-      const input = fs.createReadStream(files[i])
+    stream.on('finish', () => {
+      fs.unlink('./encryptedfolder/encrypted.zip')
+      const readstreamer = fs.createReadStream('./encryptedfolder/zipped.zip').pipe(unzip.Extract({ path: './encryptedfolder' }))
 
-      // Mark files for removal
-      removeFiles.push(files[i])
-
-      // Remove IV from filename
-      let splitted = files[i].split('/')
-      let IV = splitted[splitted.length - 1]
-      IV = new Buffer(IV, electron.crypt.encryptMethod)
-      splitted.pop()
-      let filepath = splitted.join('/')
-      let randomBytes = crypto.randomBytes(electron.crypt.salt.randomBytes).toString(electron.crypt.encryptMethod)
-      let specialSnowflake = crypto.createHash('md5').update(randomBytes).digest(electron.crypt.encryptMethod)
-      let filename = 'decrypting_' + specialSnowflake
-      files[i] = path.join(filepath, filename)
-
-      // Create the cipher from the stored IV
-      let cipher = exports.generateCiphers(IV)
-
-      // First step is to just decrypt the whole document
-      const output = fs.createWriteStream(files[i])
-      const stream = input.pipe(cipher.decrypt).pipe(output)
-
-      stream.on('finish', () => {
-        // Then lets read the decrypted document
-        const decryptedDocument = fs.createReadStream(files[i])
-        let decryptedFilename
-        let decryptedData = ''
-
-        // Add the stream data to a string
-        decryptedDocument.on('data', data => {
-          decryptedData += data
-        })
-
-        decryptedDocument.on('end', () => {
-          // Read the first line
-          // This is the original filename
-          decryptedFilename = decryptedData.toString('utf-8').split('\n')[0]
-
-          // And restore the original filename with prefix 'decrypted_'
-          fs.rename(path.join(filepath, filename), path.join(filepath, 'decrypted_' + decryptedFilename), err => {
-            chkErr(err, cb)
-
-            // Pipe it back to the orginal filename
-            let input = fs.createReadStream(path.join(filepath, 'decrypted_' + decryptedFilename))
-            let output = fs.createWriteStream(path.join(filepath, decryptedFilename))
-            let finalstream = input.pipe(RemoveFirstLine()).pipe(output)
-
-            // And remove the 'decrypted_' file
-            finalstream.on('finish', () => {
-              fs.unlink(path.join(filepath, 'decrypted_' + decryptedFilename))
-            })
-          })
-        })
+      readstreamer.on('finish', () => {
+        fs.unlink('./encryptedfolder/zipped.zip')
       })
-    }
-
-    for (let i in removeFiles) {
-      fs.unlink(removeFiles[i])
-    }
+    })
 
     cb()
   })
@@ -296,43 +235,4 @@ exports.generateCiphers = importedIV => {
     encrypt,
     decrypt,
   }
-}
-
-// TODO: put this in a module, it's ugly and doesn't belong in crypto.js
-const Transform = require('stream').Transform
-const util      = require('util')
-function RemoveFirstLine(args) {
-  if (!(this instanceof RemoveFirstLine)) {
-    return new RemoveFirstLine(args)
-  }
-
-  Transform.call(this, args)
-  this._buff = ''
-  this._removed = false
-}
-
-util.inherits(RemoveFirstLine, Transform)
-
-RemoveFirstLine.prototype._transform = function(chunk, encoding, done) {
-  if (this._removed) { // If already removed
-    this.push(chunk) // Just push through buffer
-  } else {
-    // Collect string into buffer
-    this._buff += chunk.toString()
-
-    // Check if string has newline symbol
-    if (this._buff.indexOf('\n') !== -1) {
-
-      // Push to stream skipping first line
-      this.push(this._buff.slice(this._buff.indexOf('\n') + 1))
-
-      // Clear string buffer
-      this._buff = null
-
-      // Mark as removed
-      this._removed = true
-    }
-  }
-
-  done()
 }
