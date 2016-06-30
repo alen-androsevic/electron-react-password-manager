@@ -11,7 +11,6 @@ const stream         = require('stream')
 const CombinedStream = require('combined-stream')
 const machineUUID    = require('machine-uuid')
 const async          = require('async')
-const readline       = require('linebyline')
 const zipdir         = require('zip-dir')
 const unzip          = require('unzip')
 let electron
@@ -95,7 +94,7 @@ exports.encryptFolder = cb => {
         removeFiles.push(files[i])
       }
 
-      fs.writeFile('metakappa', cipher.IV, () => {
+      fs.writeFile('./encryptedfolder/metakappa', cipher.IV, () => {
         const input = fs.createReadStream('./encryptedfolder/zipped.zip')
         const output = fs.createWriteStream('./encryptedfolder/encrypted.zip')
         const streamer = input.pipe(cipher.encrypt).pipe(output)
@@ -124,7 +123,7 @@ exports.decryptFolder = cb => {
     chkErr(err, cb)
 
     // Create the cipher from the stored IV
-    let cipher = exports.generateCiphers(fs.readFileSync('metakappa'))
+    let cipher = exports.generateCiphers(fs.readFileSync('./encryptedfolder/metakappa'))
 
     // Create the read stream
     const input = fs.createReadStream('./encryptedfolder/encrypted.zip')
