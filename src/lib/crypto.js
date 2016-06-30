@@ -76,41 +76,48 @@ exports.generateHMAC = () => {
 // How we encrypt folders
 // TODO: Try to have one pipe for the whole operation, not sure if this is even possible
 exports.encryptFolder = cb => {
-  glob('./encryptedfolder/**', {}, (err, files) => {
-    chkErr(err, cb)
-    let removeFiles = []
+  fs.access('./encryptedfolder/iv', fs.F_OK, function(err) {
+    if (!err) {
+      cb('error, already encrypted')
+      return
+    }
 
-    // Create the cipher for the zip so the IV is randomized
-    let cipher = exports.generateCiphers()
+    glob('./encryptedfolder/**', {}, (err, files) => {
+      chkErr(err, cb)
+      let removeFiles = []
 
-    zipdir('./encryptedfolder', {
-      saveTo: './encryptedfolder/zipped.zip',
-    }, function(err, buffer) {
-      if (err)
-        throw new Error(err)
+      // Create the cipher for the zip so the IV is randomized
+      let cipher = exports.generateCiphers()
 
-      for (let i in files) {
-        // Mark file for deletion
-        removeFiles.push(files[i])
-      }
+      zipdir('./encryptedfolder', {
+        saveTo: './encryptedfolder/zipped.zip',
+      }, function(err, buffer) {
+        if (err)
+          throw new Error(err)
 
-      fs.writeFile('./encryptedfolder/metakappa', cipher.IV, () => {
-        const input = fs.createReadStream('./encryptedfolder/zipped.zip')
-        const output = fs.createWriteStream('./encryptedfolder/encrypted.zip')
-        const streamer = input.pipe(cipher.encrypt).pipe(output)
+        for (let i in files) {
+          // Mark file for deletion
+          removeFiles.push(files[i])
+        }
 
-        streamer.on('finish', function() {
-          for (let i in removeFiles) {
-            // Skip if directories
-            if (fs.lstatSync(files[i]).isDirectory())
-              continue
+        fs.writeFile('./encryptedfolder/iv', cipher.IV, () => {
+          const input = fs.createReadStream('./encryptedfolder/zipped.zip')
+          const output = fs.createWriteStream('./encryptedfolder/encrypted.zip')
+          const streamer = input.pipe(cipher.encrypt).pipe(output)
 
-            fs.unlink(removeFiles[i])
-          }
+          streamer.on('finish', function() {
+            for (let i in removeFiles) {
+              // Skip if directories
+              if (fs.lstatSync(files[i]).isDirectory())
+                continue
 
-          fs.unlink('./encryptedfolder/zipped.zip')
+              fs.unlink(removeFiles[i])
+            }
 
-          cb()
+            fs.unlink('./encryptedfolder/zipped.zip')
+
+            cb()
+          })
         })
       })
     })
@@ -119,11 +126,14 @@ exports.encryptFolder = cb => {
 
 // How we decrypt folders
 exports.decryptFolder = cb => {
-  glob('./encryptedfolder/**', {}, (err, files) => {
-    chkErr(err, cb)
+  fs.access('./encryptedfolder/iv', fs.F_OK, function(err) {
+    if (err) {
+      cb('error, already decrypted')
+      return
+    }
 
     // Create the cipher from the stored IV
-    let cipher = exports.generateCiphers(fs.readFileSync('./encryptedfolder/metakappa'))
+    let cipher = exports.generateCiphers(fs.readFileSync('./encryptedfolder/iv'))
 
     // Create the read stream
     const input = fs.createReadStream('./encryptedfolder/encrypted.zip')
@@ -134,10 +144,11 @@ exports.decryptFolder = cb => {
 
     stream.on('finish', () => {
       fs.unlink('./encryptedfolder/encrypted.zip')
-      const readstreamer = fs.createReadStream('./encryptedfolder/zipped.zip').pipe(unzip.Extract({ path: './encryptedfolder' }))
+      const readstreamer = fs.createReadStream('./encryptedfolder/zipped.zip').pipe(unzip.Extract({path: './encryptedfolder'}))
 
       readstreamer.on('finish', () => {
         fs.unlink('./encryptedfolder/zipped.zip')
+        fs.unlink('./encryptedfolder/iv')
       })
     })
 
