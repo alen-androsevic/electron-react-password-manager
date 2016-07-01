@@ -13,6 +13,7 @@ const machineUUID    = require('machine-uuid')
 const async          = require('async')
 const zipdir         = require('zip-dir')
 const unzip          = require('unzip')
+const rimraf         = require('rimraf')
 let electron
 
 exports.init = a => {
@@ -107,15 +108,12 @@ exports.encryptFolder = cb => {
 
           streamer.on('finish', function() {
             for (let i in removeFiles) {
-              // Skip if directories
-              if (fs.lstatSync(files[i]).isDirectory())
-                continue
-
-              fs.unlink(removeFiles[i])
+              if (files[i] !== './encryptedfolder') {
+                rimraf(removeFiles[i], function (err) { return err })
+              }
             }
 
             fs.unlink('./encryptedfolder/zipped.zip')
-
             cb()
           })
         })

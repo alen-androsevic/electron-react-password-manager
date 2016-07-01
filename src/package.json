@@ -50,6 +50,7 @@
     "notification-shim": "^0.1.1",
     "react-bootstrap": "^0.29.4",
     "reactable": "^0.13.2",
+    "rimraf": "^2.5.2",
     "unzip": "^0.1.11",
     "zip-dir": "^1.0.2"
   }
