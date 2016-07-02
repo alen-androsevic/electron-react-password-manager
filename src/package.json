@@ -30,10 +30,8 @@
   },
   "dependencies": {
     "async": "^2.0.0-rc.5",
-    "combined-stream": "^1.0.5",
     "electron-connect": "^0.4.2",
     "electron-notification-shim": "^1.1.0",
-    "fs-extra": "^0.30.0",
     "glob": "^7.0.3",
     "gulp": "^3.9.1",
     "gulp-atom": "^0.1.0",
@@ -51,7 +49,6 @@
     "react-bootstrap": "^0.29.4",
     "reactable": "^0.13.2",
     "rimraf": "^2.5.2",
-    "unzip": "^0.1.11",
-    "zip-dir": "^1.0.2"
+    "tar-fs": "^1.13.0"
   }
 }

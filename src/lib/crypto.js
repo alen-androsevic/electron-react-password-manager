@@ -14,6 +14,7 @@ const async          = require('async')
 const archiver       = require('archiver')
 const tar            = require('tar-fs')
 const rimraf         = require('rimraf')
+const os             = require('os')
 
 let electron
 
@@ -78,10 +79,20 @@ exports.generateHMAC = () => {
 // How we encrypt folders
 // TODO: Try to have one pipe for the whole operation, not sure if this is even possible
 exports.encryptFolder = cb => {
-  fs.access('./encryptedfolder/iv', fs.F_OK, function(err) {
+  const tmpDir = path.join(os.tmpdir(), 'passwordapp')
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir)
+  }
+
+  fs.access(path.join(tmpDir, 'IV'), fs.F_OK, function(err) {
     if (!err) {
-      cb('error, already encrypted')
-      return
+      fs.access('./encryptedfolder/encrypted', fs.F_OK, function(err) {
+        if (!err) {
+          cb('error, already encrypted')
+        } else {
+          fs.unlink(path.join(tmpDir, 'IV'))
+        }
+      })
     }
 
     // Snapshot the entire directory
@@ -101,14 +112,14 @@ exports.encryptFolder = cb => {
       ])
 
       // Create the initial un-encrypted write stream
-      const output = fs.createWriteStream('./encryptedfolder/tar')
+      const output = fs.createWriteStream(path.join(tmpDir, 'tar'))
 
       archive.on('error', function(err) {
         chkErr(err, cb)
       })
 
       // Write IV to file
-      fs.writeFile('./encryptedfolder/iv', cipher.IV, err => {
+      fs.writeFile(path.join(tmpDir, 'IV'), cipher.IV, err => {
         chkErr(err, cb)
 
         // Begin streaming tar to output
@@ -120,7 +131,7 @@ exports.encryptFolder = cb => {
 
         streamer.on('finish', function() {
           // Encrypt on finished tarring
-          const input = fs.createReadStream('./encryptedfolder/tar')
+          const input = fs.createReadStream(path.join(tmpDir, 'tar'))
           const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
           const encryptedstream = input.pipe(cipher.encrypt).pipe(encryptedoutput)
 
@@ -138,7 +149,7 @@ exports.encryptFolder = cb => {
               }
             }
 
-            fs.unlink('./encryptedfolder/tar')
+            fs.unlink(path.join(tmpDir, 'tar'))
             cb()
           })
 
@@ -152,20 +163,25 @@ exports.encryptFolder = cb => {
 
 // How we decrypt folders
 exports.decryptFolder = cb => {
-  fs.access('./encryptedfolder/iv', fs.F_OK, function(err) {
+  const tmpDir = path.join(os.tmpdir(), 'passwordapp')
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir)
+  }
+
+  fs.access(path.join(tmpDir, 'IV'), fs.F_OK, function(err) {
     if (err) {
       cb('error, already decrypted')
       return
     }
 
     // Create the cipher from the stored IV
-    let cipher = exports.generateCiphers(fs.readFileSync('./encryptedfolder/iv'))
+    let cipher = exports.generateCiphers(fs.readFileSync(path.join(tmpDir, 'IV')))
 
     // Create the read stream
     const input = fs.createReadStream('./encryptedfolder/encrypted')
 
     // First step is to just decrypt the whole zip
-    const output = fs.createWriteStream('./encryptedfolder/decrypted')
+    const output = fs.createWriteStream(path.join(tmpDir, 'decrypted'))
     const stream = input.pipe(cipher.decrypt).pipe(output)
 
     stream.on('error', function(err) {
@@ -174,12 +190,12 @@ exports.decryptFolder = cb => {
 
     stream.on('finish', () => {
       // Then untar
-      const readstreamer = fs.createReadStream('./encryptedfolder/decrypted').pipe(tar.extract('./encryptedfolder'))
+      const readstreamer = fs.createReadStream(path.join(tmpDir, 'decrypted')).pipe(tar.extract('./encryptedfolder'))
 
       readstreamer.on('finish', () => {
         // And cleanup
-        fs.unlink('./encryptedfolder/decrypted')
-        fs.unlink('./encryptedfolder/iv')
+        fs.unlink(path.join(tmpDir, 'decrypted'))
+        fs.unlink(path.join(tmpDir, 'IV'))
         fs.unlink('./encryptedfolder/encrypted')
         cb()
       })
