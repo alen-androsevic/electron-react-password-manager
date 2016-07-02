@@ -11,9 +11,10 @@ const stream         = require('stream')
 const CombinedStream = require('combined-stream')
 const machineUUID    = require('machine-uuid')
 const async          = require('async')
-const zipdir         = require('zip-dir')
-const unzip          = require('unzip')
+const archiver       = require('archiver')
+const tar            = require('tar-fs')
 const rimraf         = require('rimraf')
+
 let electron
 
 exports.init = a => {
@@ -83,41 +84,68 @@ exports.encryptFolder = cb => {
       return
     }
 
+    // Snapshot the entire directory
     glob('./encryptedfolder/**', {}, (err, files) => {
       chkErr(err, cb)
-      let removeFiles = []
 
-      // Create the cipher for the zip so the IV is randomized
+      // Create the cipher for the tar process this ensures the IV is randomized
       let cipher = exports.generateCiphers()
 
-      zipdir('./encryptedfolder', {
-        saveTo: './encryptedfolder/zipped.zip',
-      }, function(err, buffer) {
-        if (err)
-          throw new Error(err)
+      // Tar options
+      const archive = archiver('tar')
 
-        for (let i in files) {
-          // Mark file for deletion
-          removeFiles.push(files[i])
-        }
+      // Bulk archive these files
+      archive.bulk([{
+          expand: true, cwd: './encryptedfolder', src: ['**/*'],
+        },
+      ])
 
-        fs.writeFile('./encryptedfolder/iv', cipher.IV, () => {
-          const input = fs.createReadStream('./encryptedfolder/zipped.zip')
-          const output = fs.createWriteStream('./encryptedfolder/encrypted.zip')
-          const streamer = input.pipe(cipher.encrypt).pipe(output)
+      // Create the initial un-encrypted write stream
+      const output = fs.createWriteStream('./encryptedfolder/tar')
 
-          streamer.on('finish', function() {
-            for (let i in removeFiles) {
+      archive.on('error', function(err) {
+        chkErr(err, cb)
+      })
+
+      // Write IV to file
+      fs.writeFile('./encryptedfolder/iv', cipher.IV, err => {
+        chkErr(err, cb)
+
+        // Begin streaming tar to output
+        const streamer = archive.pipe(output)
+
+        streamer.on('error', function(err) {
+          chkErr(err, cb)
+        })
+
+        streamer.on('finish', function() {
+          // Encrypt on finished tarring
+          const input = fs.createReadStream('./encryptedfolder/tar')
+          const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
+          const encryptedstream = input.pipe(cipher.encrypt).pipe(encryptedoutput)
+
+          encryptedstream.on('error', function(err) {
+            chkErr(err, cb)
+          })
+
+          encryptedstream.on('finish', () => {
+            // Cleanup after encrypt
+            for (let i in files) {
               if (files[i] !== './encryptedfolder') {
-                rimraf(removeFiles[i], function (err) { return err })
+                rimraf(files[i], function(err) {
+                  chkErr(err, cb)
+                })
               }
             }
 
-            fs.unlink('./encryptedfolder/zipped.zip')
+            fs.unlink('./encryptedfolder/tar')
             cb()
           })
+
         })
       })
+
+      archive.finalize()
     })
   })
 }
@@ -134,23 +162,29 @@ exports.decryptFolder = cb => {
     let cipher = exports.generateCiphers(fs.readFileSync('./encryptedfolder/iv'))
 
     // Create the read stream
-    const input = fs.createReadStream('./encryptedfolder/encrypted.zip')
+    const input = fs.createReadStream('./encryptedfolder/encrypted')
 
     // First step is to just decrypt the whole zip
-    const output = fs.createWriteStream('./encryptedfolder/zipped.zip')
+    const output = fs.createWriteStream('./encryptedfolder/decrypted')
     const stream = input.pipe(cipher.decrypt).pipe(output)
 
+    stream.on('error', function(err) {
+      chkErr(err, cb)
+    })
+
     stream.on('finish', () => {
-      fs.unlink('./encryptedfolder/encrypted.zip')
-      const readstreamer = fs.createReadStream('./encryptedfolder/zipped.zip').pipe(unzip.Extract({path: './encryptedfolder'}))
+      // Then untar
+      const readstreamer = fs.createReadStream('./encryptedfolder/decrypted').pipe(tar.extract('./encryptedfolder'))
 
       readstreamer.on('finish', () => {
-        fs.unlink('./encryptedfolder/zipped.zip')
+        // And cleanup
+        fs.unlink('./encryptedfolder/decrypted')
         fs.unlink('./encryptedfolder/iv')
+        fs.unlink('./encryptedfolder/encrypted')
+        cb()
       })
     })
 
-    cb()
   })
 }
 
