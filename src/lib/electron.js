@@ -3,9 +3,11 @@
 const connection = new(require('nosqlite').Connection)('./db')
 
 exports.init = electron => {
-  electron.dev = true
+  electron.dev = false
 
   electron.event
+
+  electron.title = 'PassApp'
 
   electron.crypt = {
     bits: 0,

@@ -1,5 +1,6 @@
 {
   "name": "PassApp",
+  "icon": "logo.png",
   "version": "0.2.1",
   "description": "A secure password storing application. Built with Electron and React",
   "main": "main.js",

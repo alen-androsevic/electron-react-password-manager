@@ -139,6 +139,9 @@ const EncryptButton = React.createClass({
   },
 
   render: function() {
+    var divStyle = {
+      display: 'inline',
+    }
     var styleEncrypt = {}
     var styleDecrypt = {}
     if (this.state.encrypted === 0) {
@@ -152,7 +155,7 @@ const EncryptButton = React.createClass({
     }
 
     return (
-      <div>
+      <div style={divStyle}>
         <Button style={styleEncrypt} onClick={this.encrypt} type='submit'>
           Encrypt Data
         </Button>
@@ -189,8 +192,11 @@ const LoadingBar = React.createClass({
 // The add password button
 const AddPasswordButton = React.createClass({
   render: function() {
+    var divStyle = {
+      display: 'inline',
+    }
     return (
-      <div>
+      <div style={divStyle}>
         <Button onClick={this.open} type='submit'>
           Add Password
         </Button>
@@ -229,7 +235,7 @@ const Main = React.createClass({
   render: function() {
     return (
       <div>
-        <h1>Password App</h1>
+        <h1>{this.props.title}</h1>
         <LoadingBar />
         <AddPasswordButton /><EncryptButton encryptState={this.props.encryptState} />
         <TableCreate passwords={this.props.passwords} />
@@ -239,9 +245,9 @@ const Main = React.createClass({
 })
 
 // When we receive server data
-ipcRenderer.on('indexRender', function(event, passwords, encryptState) {
+ipcRenderer.on('indexRender', function(event, passwords, encryptState, title) {
   ReactDOM.render(
-    <Main passwords={passwords} encryptState={encryptState} />,
+    <Main title={title} passwords={passwords} encryptState={encryptState} />,
     document.getElementById('react-index')
   )
 })

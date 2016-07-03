@@ -1,6 +1,8 @@
 'use strict'
 
-const path = require('path')
+const path         = require('path')
+const {Tray, Menu} = require('electron')
+const packageInfo  = require('../package.json')
 
 let mainWindow
 let electron
@@ -30,14 +32,35 @@ exports.init = (a, cb) => {
 
 // Creates the app
 exports.createApp = () => {
+  const iconPath = path.join(__dirname, '../', 'inc', 'img', 'logo.png')
+
   mainWindow = new electron.BrowserWindow({
     useContentSize:   true,
     center:           true,
-    title:            'Pass App',
-    icon:             path.join(__dirname, 'inc', 'img', 'logo.png'),
+    title:            packageInfo.name,
+    icon:             iconPath,
     acceptFirstMouse: true,
     autoHideMenuBar:  true,
   })
+
+  // Create tray and context menu
+  const appIcon = new Tray(iconPath)
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Toggle DevTools',
+      accelerator: 'Alt+Command+I',
+      click: function() {
+        mainWindow.show()
+        mainWindow.toggleDevTools()
+      },
+    },
+    { label: 'Quit',
+      accelerator: 'Command+Q',
+      selector: 'terminate:',
+    },
+  ])
+  appIcon.setToolTip(packageInfo.name)
+  appIcon.setContextMenu(contextMenu)
 
   if (electron.dev)
     mainWindow.webContents.openDevTools()

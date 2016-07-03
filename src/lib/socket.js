@@ -1,15 +1,16 @@
 'use strict'
 
-const crypto     = require('./crypto')
-const events     = require('./events')
-const timer      = require('./timer')
-const chkErr     = require('./error').chkErr
-const mkdirp     = require('mkdirp')
-const cryptoNode = require('crypto')
-const async      = require('async')
-const fs         = require('fs')
-const path       = require('path')
-const os         = require('os')
+const crypto      = require('./crypto')
+const events      = require('./events')
+const timer       = require('./timer')
+const chkErr      = require('./error').chkErr
+const mkdirp      = require('mkdirp')
+const cryptoNode  = require('crypto')
+const async       = require('async')
+const fs          = require('fs')
+const path        = require('path')
+const os          = require('os')
+const packageInfo = require('../package.json')
 
 let electron
 let callbackError
@@ -95,7 +96,7 @@ exports.init = (a, cb) => {
 
   // When frontend requests index data
   electron.ipcMain.on('indexRender', (event, data) => {
-    event.sender.send('indexRender',  exports.getPasswords(cb), exports.getEncryptedState(cb))
+    event.sender.send('indexRender',  exports.getPasswords(cb), exports.getEncryptedState(cb), packageInfo.name)
   })
 
   // When a password (service) has been added

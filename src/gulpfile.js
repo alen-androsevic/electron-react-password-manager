@@ -19,9 +19,10 @@ const debounceDelay = {
   debounceDelay: 2000,
 }
 
-gulp.task('default', () => {
+gulp.task('default', cb => {
   // Build the all the files on start, just to be sure :)
   rebuildAll(() => {
+    cb()
     electron.start()
   })
 
