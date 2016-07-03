@@ -15,6 +15,9 @@ $(function() {
       clearTimeout(variableTimeout)
       variableTimeout = setTimeout(function() {
         $('.progressbar-container').hide('slow')
+        $('.progressbar-progress').css({
+          width: '0%',
+        })
       }, 1000)
     } else {
       $('.progressbar-container').show('fast')
