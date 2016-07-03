@@ -233,9 +233,15 @@ const AddPasswordButton = React.createClass({
 // Our main view
 const Main = React.createClass({
   render: function() {
+    var divStyle = {
+      display: 'inline',
+    }
+    var imgStyle = {
+      'padding-bottom': '13px',
+    }
     return (
       <div>
-        <h1>{this.props.title}</h1>
+        <img src='../../img/logo.png' style={imgStyle} width='30px'/> <h1 style={divStyle}>{this.props.title}</h1>
         <LoadingBar />
         <AddPasswordButton /><EncryptButton encryptState={this.props.encryptState} />
         <TableCreate passwords={this.props.passwords} />

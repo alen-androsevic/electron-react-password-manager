@@ -7,8 +7,6 @@ exports.init = electron => {
 
   electron.event
 
-  electron.title = 'PassApp'
-
   electron.crypt = {
     bits: 0,
     decryptMethod: 'utf-8',

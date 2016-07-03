@@ -47,6 +47,9 @@ exports.createApp = () => {
   const appIcon = new Tray(iconPath)
   const contextMenu = Menu.buildFromTemplate([
     {
+      label: packageInfo.name + ' - ' + packageInfo.version,
+    },
+    {
       label: 'Toggle DevTools',
       accelerator: 'Alt+Command+I',
       click: function() {
@@ -56,7 +59,9 @@ exports.createApp = () => {
     },
     { label: 'Quit',
       accelerator: 'Command+Q',
-      selector: 'terminate:',
+      click: function() {
+        electron.app.quit()
+      },
     },
   ])
   appIcon.setToolTip(packageInfo.name)
