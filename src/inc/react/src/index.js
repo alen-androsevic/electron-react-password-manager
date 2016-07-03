@@ -11,6 +11,7 @@ const FormGroup      = require('react-bootstrap').FormGroup
 const ControlLabel   = require('react-bootstrap').ControlLabel
 const FormControl    = require('react-bootstrap').FormControl
 const Table          = require('react-bootstrap').Table
+const ProgressBar    = require('react-progressbar')
 
 // Each table row
 const PasswordRow = React.createClass({
@@ -153,6 +154,18 @@ const EncryptButton = React.createClass({
   },
 })
 
+
+const LoadingBar = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <ProgressBar completed={0} />
+      </div>
+    )
+  },
+
+})
+
 // The add password button
 const AddPasswordButton = React.createClass({
   render: function() {
@@ -197,6 +210,7 @@ const Main = React.createClass({
     return (
       <div>
         <h1>Password App</h1>
+        <LoadingBar />
         <AddPasswordButton /><EncryptButton />
         <TableCreate passwords={this.props.passwords} />
       </div>

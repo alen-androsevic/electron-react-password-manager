@@ -15,7 +15,9 @@ const async        = require('async')
 const timer        = require('./lib/timer')
 const fs           = require('fs')
 
-const debounceDelay = {debounceDelay: 2000}
+const debounceDelay = {
+  debounceDelay: 2000,
+}
 
 gulp.task('default', () => {
   // Build the all the files on start, just to be sure :)
@@ -24,8 +26,7 @@ gulp.task('default', () => {
   })
 
   gulp.watch([
-    'lib/*',
-    'lib/*/**',
+    'lib/**/*',
     'main.js',
   ], debounceDelay, (() => {
     console.log('Program change detected, restarting')
@@ -33,7 +34,7 @@ gulp.task('default', () => {
     electron.restart()
   }))
   gulp.watch([
-    'inc/react/src/*',
+    'inc/react/src/**/*',
   ], debounceDelay, (() => {
     console.log('React change detected, rebuilding files')
     electron.stop()
@@ -42,7 +43,7 @@ gulp.task('default', () => {
     })
   }))
   gulp.watch([
-    'inc/css/src/*',
+    'inc/css/src**/*',
   ], debounceDelay, (() => {
     console.log('CSS Change detected, minfiying and concating css files')
     electron.stop()
@@ -51,7 +52,7 @@ gulp.task('default', () => {
     })
   }))
   gulp.watch([
-    'inc/js/src/*',
+    'inc/js/src**/*',
   ], debounceDelay, (() => {
     console.log('JS Change detected, minfiying and concating js files')
     electron.stop()
@@ -60,7 +61,7 @@ gulp.task('default', () => {
     })
   }))
   gulp.watch([
-    'inc/html/src/*',
+    'inc/html/src**/*',
   ], debounceDelay, (() => {
     console.log('HTML Change detected, minfiying html files')
     electron.stop()
@@ -130,7 +131,7 @@ const buildCss = cb => {
 const buildJs = cb => {
   let time = new timer()
 
-  gulp.src(['inc/js/src/!/*.js', 'inc/js/src/*.js'])
+  gulp.src(['inc/js/src/!/**/*.js', 'inc/js/src/**/*.js'])
     .pipe(uglify().on('error', gulpUtil.log))
     .pipe(concat('main.js'))
     .pipe(ignore.exclude(['**/*.map']))
@@ -154,7 +155,7 @@ const buildAllReact = cb => {
   let files = fs.readdirSync('inc/react/src/')
   for (let i in files) {
     let name = 'inc/react/src/' + files[i]
-    let file = name.split('/')[name.split('/').length-1].split('.')[0]
+    let file = name.split('/')[name.split('/').length - 1].split('.')[0]
     reactFiles[i] = {
       file,
     }
@@ -165,13 +166,15 @@ const buildAllReact = cb => {
     buildReact(value.file, () => {
       callback()
     })
-  }, err => {
-      if (err)
-        throw new Error(err)
+  },
 
-      console.log('RebuildAllReact task complete: ' + time.stop() + 'ms')
-      if (cb)
-        cb()
+  err => {
+    if (err)
+      throw new Error(err)
+
+    console.log('RebuildAllReact task complete: ' + time.stop() + 'ms')
+    if (cb)
+      cb()
   })
 }
 
@@ -185,22 +188,26 @@ const rebuildAll = cb => {
         callback()
       })
     },
+
     js: callback => {
       buildJs(() =>  {
         callback()
       })
     },
+
     css: callback => {
       buildCss(() =>  {
         callback()
       })
     },
+
     buildAllReact: callback => {
       buildAllReact(() =>  {
         console.log('rebuildAll task complete: ' + time.stop() + 'ms')
         if (cb)
           cb()
       })
-    }
+    },
+
   })
 }

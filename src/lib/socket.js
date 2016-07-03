@@ -256,6 +256,8 @@ exports.loginContinue = (event, data) => {
     if (firstResult.length == 0) {
       exports.sendMsg(event, true, 'Account created, logging in.')
       events.loadPage('index')
+
+      electron.event = event
       return // Stop because no results
     }
 

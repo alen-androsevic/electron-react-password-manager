@@ -3,7 +3,9 @@
 const connection = new(require('nosqlite').Connection)('./db')
 
 exports.init = electron => {
-  electron.dev = false
+  electron.dev = true
+
+  electron.event
 
   electron.crypt = {
     bits: 0,

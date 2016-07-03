@@ -47,6 +47,7 @@
     "nosqlite": "^0.2.2",
     "notification-shim": "^0.1.1",
     "react-bootstrap": "^0.29.4",
+    "react-progressbar": "^1.2.0",
     "reactable": "^0.13.2",
     "rimraf": "^2.5.2",
     "tar-fs": "^1.13.0"
