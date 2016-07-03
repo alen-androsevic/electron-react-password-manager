@@ -46,13 +46,13 @@ const build = (platformsSet, cb) => {
           CFBundleIdentifier:  packageJson.name,
           CFBundleName:        packageJson.name,
           CFBundleVersion:     packageJson.version,
-          icon:                path.join(__dirname, 'src', 'inc', 'img', 'logo.icns'),
+          icon:                path.join(__dirname, 'src', 'inc', 'img', 'logo.png'),
         },
         win: {
           'version-string':  packageJson.version,
           'file-version':    packageJson.version,
           'product-version': packageJson.version,
-          icon:              path.join(__dirname, 'src', 'inc', 'img', 'logo.ico'),
+          icon:              path.join(__dirname, 'src', 'inc', 'img', 'logo.png'),
         },
       },
     })).pipe(gulp.dest(''))
