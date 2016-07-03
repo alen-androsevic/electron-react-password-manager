@@ -43,7 +43,7 @@ const LoginAccount = React.createClass({
   render: function() {
     var opts = {}
     if (this.state.disabled) {
-      opts['disabled'] = 'disabled'
+      opts['disabled'] = true
     }
 
     return (

@@ -9,9 +9,7 @@ $(function() {
 
   ipcRenderer.on('progressData', function(event, progressData) {
     if (progressData.progress == 100) {
-      setTimeout(function() {
-        $('.progressbar-container').hide('fast')
-      }, 2000)
+      $('.progressbar-container').hide('slow')
     } else {
       $('.progressbar-container').show('fast')
     }

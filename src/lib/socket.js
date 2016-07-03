@@ -8,6 +8,8 @@ const mkdirp     = require('mkdirp')
 const cryptoNode = require('crypto')
 const async      = require('async')
 const fs         = require('fs')
+const path       = require('path')
+const os         = require('os')
 
 let electron
 let callbackError
@@ -93,7 +95,7 @@ exports.init = (a, cb) => {
 
   // When frontend requests index data
   electron.ipcMain.on('indexRender', (event, data) => {
-    event.sender.send('indexRender', exports.getPasswords(cb))
+    event.sender.send('indexRender',  exports.getPasswords(cb), exports.getEncryptedState(cb))
   })
 
   // When a password (service) has been added
@@ -143,7 +145,7 @@ exports.createIfNotExists = db => {
     },
 
     (exists, callback) => {
-       // Check if database does not exists and continue if so
+      // Check if database does not exists and continue if so
       if (exists) {
         if (db.allSync().length === 0)
           electron.firstTime = true
@@ -201,6 +203,29 @@ exports.createIfNotExists = db => {
   ])
 }
 
+// Get the encrypted folder state
+exports.getEncryptedState = cb => {
+  const tmpDir = path.join(os.tmpdir(), 'passwordapp')
+  try {
+    fs.accessSync(path.join(tmpDir, 'IV'))
+  } catch (e) {
+    if (e.code != 'ENOENT') {
+      cb(e)
+      return
+    }
+    return 0
+  }
+
+  try {
+    fs.accessSync('./encryptedfolder/encrypted')
+  } catch (e) {
+    if (e.code == 'ENOENT')
+      return 0
+  }
+
+  return 1
+}
+
 // Get all password data from database
 exports.getPasswords = cb => {
   let passwords = electron.db.passwords.allSync()
@@ -246,6 +271,9 @@ exports.getPasswords = cb => {
 }
 
 exports.loginContinue = (event, data) => {
+  // Bind the event variable to electron main variable on start
+  electron.event = event
+
   // Generate rsa and pub
   crypto.generateKey(data.pass, () => {
     data = null // Attempt to null it out of memory :P?
@@ -256,8 +284,6 @@ exports.loginContinue = (event, data) => {
     if (firstResult.length == 0) {
       exports.sendMsg(event, true, 'Account created, logging in.')
       events.loadPage('index')
-
-      electron.event = event
       return // Stop because no results
     }
 

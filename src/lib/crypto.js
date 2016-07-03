@@ -80,7 +80,7 @@ exports.generateHMAC = () => {
 // How we encrypt folders
 // TODO: Try to have one pipe for the whole operation, not sure if this is even possible
 exports.encryptFolder = cb => {
-  electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: 'Encrypting your files'})
+  electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(1/5) Starting Job'})
   const tmpDir = path.join(os.tmpdir(), 'passwordapp')
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir)
@@ -101,7 +101,7 @@ exports.encryptFolder = cb => {
     glob('./encryptedfolder/**', {}, (err, files) => {
       chkErr(err, cb)
 
-      electron.event.sender.send('progressData', {progress: '10', title: 'Encrypting', desc: 'Encrypting your files'})
+      electron.event.sender.send('progressData', {progress: '10', title: 'Encrypting', desc: '(2/5) Generating Ciphers'})
 
       // Create the cipher for the tar process this ensures the IV is randomized
       let cipher = exports.generateCiphers()
@@ -126,7 +126,7 @@ exports.encryptFolder = cb => {
       fs.writeFile(path.join(tmpDir, 'IV'), cipher.IV, err => {
         chkErr(err, cb)
 
-          electron.event.sender.send('progressData', {progress: '30', title: 'Encrypting', desc: 'Encrypting your files'})
+        electron.event.sender.send('progressData', {progress: '30', title: 'Encrypting', desc: '(3/5) Zipping Files'})
 
         // Begin streaming tar to output
         const streamer = archive.pipe(output)
@@ -136,7 +136,7 @@ exports.encryptFolder = cb => {
         })
 
         streamer.on('finish', function() {
-          electron.event.sender.send('progressData', {progress: '60', title: 'Encrypting', desc: 'Encrypting your files'})
+          electron.event.sender.send('progressData', {progress: '60', title: 'Encrypting', desc: '(4/5) Encrypting Zip'})
           // Encrypt on finished tarring
           const input = fs.createReadStream(path.join(tmpDir, 'tar'))
           const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
@@ -147,7 +147,7 @@ exports.encryptFolder = cb => {
           })
 
           encryptedstream.on('finish', () => {
-            electron.event.sender.send('progressData', {progress: '100', title: 'Encrypting', desc: 'Encrypting your files'})
+            electron.event.sender.send('progressData', {progress: '100', title: 'Encrypting', desc: '(5/5) Cleaning Up'})
             // Cleanup after encrypt
             for (let i in files) {
               if (files[i] !== './encryptedfolder') {
@@ -171,7 +171,7 @@ exports.encryptFolder = cb => {
 
 // How we decrypt folders
 exports.decryptFolder = cb => {
-  electron.event.sender.send('progressData', {progress: '0', title: 'Decrypting', desc: 'Decrypting your files'})
+  electron.event.sender.send('progressData', {progress: '0', title: 'Decrypting', desc: '(1/4) Starting Job'})
   const tmpDir = path.join(os.tmpdir(), 'passwordapp')
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir)
@@ -183,7 +183,7 @@ exports.decryptFolder = cb => {
       return
     }
 
-      electron.event.sender.send('progressData', {progress: '40', title: 'Decrypting', desc: 'Decrypting your files'})
+    electron.event.sender.send('progressData', {progress: '40', title: 'Decrypting', desc: '(2/4) Decrypting'})
 
     // Create the cipher from the stored IV
     let cipher = exports.generateCiphers(fs.readFileSync(path.join(tmpDir, 'IV')))
@@ -200,12 +200,12 @@ exports.decryptFolder = cb => {
     })
 
     stream.on('finish', () => {
-      electron.event.sender.send('progressData', {progress: '70', title: 'Decrypting', desc: 'Decrypting your files'})
+      electron.event.sender.send('progressData', {progress: '70', title: 'Decrypting', desc: '(3/4) Extracting Files'})
       // Then untar
       const readstreamer = fs.createReadStream(path.join(tmpDir, 'decrypted')).pipe(tar.extract('./encryptedfolder'))
 
       readstreamer.on('finish', () => {
-        electron.event.sender.send('progressData', {progress: '100', title: 'Decrypting', desc: 'Decrypting your files'})
+        electron.event.sender.send('progressData', {progress: '100', title: 'Decrypting', desc: '(4/4) Cleaning Up'})
         // And cleanup
         fs.unlink(path.join(tmpDir, 'decrypted'))
         fs.unlink(path.join(tmpDir, 'IV'))
