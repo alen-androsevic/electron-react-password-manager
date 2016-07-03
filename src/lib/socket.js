@@ -312,11 +312,17 @@ exports.loginContinue = (event, data) => {
 
 // Desktop notifcations
 exports.sendMsg = (event, result, message, extra) => {
+  let type = 'error'
+  if (result) {
+    type = 'success'
+  }
+
   let msg = {
     result: result,
     humane: {
       title: 'Password App',
       msg: message,
+      type: type,
       extra: extra,
     },
   }
