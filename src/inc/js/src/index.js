@@ -7,6 +7,7 @@ $(function() {
       }, 1200)
   })
 
+  // When main process sends progressData
   ipcRenderer.on('progressData', function(event, progressData) {
     if (progressData.progress == 100) {
       $('.progressbar-container').hide('slow')
@@ -25,5 +26,9 @@ $(function() {
     $('.progressbar-progress').css({
       width: progressData.progress + '%',
     })
+  })
+
+  ipcRenderer.on('serviceAdd', function(event, data) {
+    $('table > tbody:last-child').append('<tr><td>' + data.service + '</td><td>' + data.email + '</td><td>' + data.password + '</td><td></td></tr>')
   })
 })

@@ -101,6 +101,7 @@ exports.init = (a, cb) => {
 
   // When a password (service) has been added
   electron.ipcMain.on('addService', (event, post) => {
+    const originalPost = post
     async.parallel({
       password: function(callback) {
         crypto.encryptString(post.password, (err, decrypted) => {
@@ -124,6 +125,7 @@ exports.init = (a, cb) => {
       electron.db.passwords.post(post, (err, data) => {
         chkErr(err, callbackError)
         exports.sendMsg(event, true, 'Password added!', {id: data})
+        event.sender.send('serviceAdd', originalPost)
       })
     })
   })
