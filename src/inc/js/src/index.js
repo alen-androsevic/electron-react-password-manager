@@ -1,5 +1,7 @@
 'use strict'
 
+var variableTimeout
+
 $(function() {
   $('.meter > span').each(function() {
     $(this).data('origWidth', $(this).width()).width(0).animate({
@@ -10,7 +12,10 @@ $(function() {
   // When main process sends progressData
   ipcRenderer.on('progressData', function(event, progressData) {
     if (progressData.progress == 100) {
-      $('.progressbar-container').hide('slow')
+      clearTimeout(variableTimeout)
+      variableTimeout = setTimeout(function() {
+        $('.progressbar-container').hide('slow')
+      }, 1000)
     } else {
       $('.progressbar-container').show('fast')
     }

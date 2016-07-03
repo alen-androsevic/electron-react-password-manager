@@ -16,6 +16,7 @@ const tar            = require('tar-fs')
 const rimraf         = require('rimraf')
 const os             = require('os')
 const socket         = require('./socket')
+const progress       = require('progress-stream')
 
 let electron
 
@@ -137,10 +138,27 @@ exports.encryptFolder = cb => {
 
         streamer.on('finish', function() {
           electron.event.sender.send('progressData', {progress: '60', title: 'Encrypting', desc: '(4/5) Encrypting Zip'})
+
           // Encrypt on finished tarring
           const input = fs.createReadStream(path.join(tmpDir, 'tar'))
           const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
-          const encryptedstream = input.pipe(cipher.encrypt).pipe(encryptedoutput)
+
+          // Do a file stat to check the file size of the encrypted file
+          const stat = fs.statSync(path.join(tmpDir, 'tar'))
+          const str = progress({
+            length: stat.size,
+            time: 100,
+          })
+
+          // Now we send the progress status back to our renderer via the progressData function
+          str.on('progress', function(progress) {
+            electron.event.sender.send('progressData', {
+              progress: progress.percentage,
+              title: 'Encrypting', desc: '(4/5) Encrypting Zip, ETA: ' + progress.eta + ' seconds',
+            })
+          })
+
+          const encryptedstream = input.pipe(cipher.encrypt).pipe(str).pipe(encryptedoutput)
 
           encryptedstream.on('error', function(err) {
             chkErr(err, cb)
@@ -193,7 +211,26 @@ exports.decryptFolder = cb => {
 
     // First step is to just decrypt the whole zip
     const output = fs.createWriteStream(path.join(tmpDir, 'decrypted'))
-    const stream = input.pipe(cipher.decrypt).pipe(output)
+
+    // Do a file stat to check the file size of the encrypted file
+    const stat = fs.statSync('./encryptedfolder/encrypted')
+    const str = progress({
+      length: stat.size,
+      time: 100,
+    })
+
+    // Now we send the progress status back to our renderer via the progressData function
+    str.on('progress', function(progress) {
+      if (progress.percentage >= 99)
+        progress.percentage = 99
+
+      electron.event.sender.send('progressData', {
+        progress: progress.percentage,
+        title: 'Decrypting', desc: '(2/4) Decrypting Zip, ETA: ' + progress.eta + ' seconds',
+      })
+    })
+
+    const stream = input.pipe(cipher.decrypt).pipe(str).pipe(output)
 
     stream.on('error', function(err) {
       chkErr(err, cb)
@@ -238,7 +275,7 @@ exports.decryptString = (string, cb) => {
   let noCorruption
 
   // Check for data corruption
-  for (var i = 0; i <= (thisHmac.length - 1); i++) {
+  for (let i = 0; i <= (thisHmac.length - 1); i++) {
     noCorruption |= thisHmac.charCodeAt(i) ^ thatHmac.charCodeAt(i)
   }
 
@@ -276,7 +313,7 @@ exports.encryptString = (string, cb) => {
   let cipher = exports.generateCiphers()
 
   // Encrypt the string
-  var cipherText = cipher.encrypt.update(string, electron.crypt.decryptMethod, electron.crypt.encryptMethod)
+  let cipherText = cipher.encrypt.update(string, electron.crypt.decryptMethod, electron.crypt.encryptMethod)
   cipherText += cipher.encrypt.final(electron.crypt.encryptMethod)
 
   // Create the HMAC
