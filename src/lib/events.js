@@ -77,8 +77,11 @@ exports.createApp = () => {
 }
 
 // Loads local html pages
-// The settimeout is there for a weird bug with desktop notifcations not showing sometimes.
-exports.loadPage = page => {
+exports.loadPage = (page, waitTime) => {
+  if (typeof(waitTime) == 'undefined')
+    waitTime = 0
+
+  waitTime = waitTime * 1000
   setTimeout((page, mainWindow) => {
     if (!mainWindow) {
       // App is not ready yet? wait a bit!
@@ -88,5 +91,5 @@ exports.loadPage = page => {
 
     const htmlPath = path.join(__dirname, '../', 'inc', 'html', 'build')
     mainWindow.loadURL(`file://${htmlPath}/${page}.html`)
-  }, 50, page, mainWindow)
+  }, waitTime, page, mainWindow)
 }

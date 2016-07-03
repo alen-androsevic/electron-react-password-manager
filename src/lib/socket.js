@@ -57,7 +57,7 @@ exports.init = (a, cb) => {
     // Check if passwords are same if first time run
     if (electron.firstTime) {
       if (data.pass != data.pass2) {
-        exports.sendMsg(event, true, 'Passwords are not the same!')
+        exports.sendMsg(event, true, 'Error', 'Passwords are not the same!')
         return
       }
       // Save encryption methods to database if run for first time
@@ -77,7 +77,7 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('encryptFolder', (event, data) => {
     crypto.encryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder encrypted!', {id: data})
+      exports.sendMsg(event, true, 'Folder Encryption', 'Folder encrypted!', {id: data})
     })
   })
 
@@ -85,7 +85,7 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('decryptFolder', (event, data) => {
     crypto.decryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder decrypted!', {id: data})
+      exports.sendMsg(event, true, 'Folder Encryption', 'Folder decrypted!', {id: data})
     })
   })
 
@@ -101,7 +101,7 @@ exports.init = (a, cb) => {
 
   // When a password (service) has been added
   electron.ipcMain.on('addService', (event, post) => {
-    const originalPost = post
+    let originalPost = post
     async.parallel({
       password: function(callback) {
         crypto.encryptString(post.password, (err, decrypted) => {
@@ -124,8 +124,9 @@ exports.init = (a, cb) => {
     function(err, post) {
       electron.db.passwords.post(post, (err, data) => {
         chkErr(err, callbackError)
-        exports.sendMsg(event, true, 'Password added!', {id: data})
+        exports.sendMsg(event, true, 'Service Added!', 'Your service ' + originalPost.service + ' has been successfully added', {id: data})
         event.sender.send('serviceAdd', originalPost)
+        originalPost = null
       })
     })
   })
@@ -133,7 +134,7 @@ exports.init = (a, cb) => {
   // When a password (service) has been deleted
   electron.ipcMain.on('deleteService', (event, id) => {
     electron.db.passwords.delete(id)
-    exports.sendMsg(event, true, 'Password removed!', {removedid: id})
+    exports.sendMsg(event, true, 'Service Removed!', 'Your service has been successfully removed', {removedid: id})
   })
 }
 
@@ -285,8 +286,8 @@ exports.loginContinue = (event, data) => {
 
     // Check if new account
     if (firstResult.length == 0) {
-      exports.sendMsg(event, true, 'Account created, logging in.')
-      events.loadPage('index')
+      exports.sendMsg(event, true, 'Login', 'Account created, You are now logged in')
+      events.loadPage('index', 1.5)
       return // Stop because no results
     }
 
@@ -294,24 +295,24 @@ exports.loginContinue = (event, data) => {
     firstResult = firstResult[0]
     crypto.decryptString(firstResult.password, (err, decrypted) => {
       if (err === 'HMAC TAMPER') {
-        exports.sendMsg(event, false, 'Your password DB is corrupt')
+        exports.sendMsg(event, false, 'Corrupt Database', 'Your password database is corrupt')
         return
       }
 
       if (err === 'DECRYPT FAIL') {
-        exports.sendMsg(event, false, 'Wrong Password!')
+        exports.sendMsg(event, false, 'Wrong Password', 'Supplied credentials are invalid, please try again.')
         return
       }
 
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Login succeeded.')
-      events.loadPage('index')
+      exports.sendMsg(event, true, 'Login Successful', 'Welcome!')
+      events.loadPage('index', 1.5)
     })
   })
 }
 
 // Desktop notifcations
-exports.sendMsg = (event, result, message, extra) => {
+exports.sendMsg = (event, result, title, message, extra) => {
   let type = 'error'
   if (result) {
     type = 'success'
@@ -320,7 +321,7 @@ exports.sendMsg = (event, result, message, extra) => {
   let msg = {
     result: result,
     humane: {
-      title: 'Password App',
+      title: title,
       msg: message,
       type: type,
       extra: extra,

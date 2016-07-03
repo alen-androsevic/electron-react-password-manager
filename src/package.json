@@ -44,7 +44,6 @@
     "macaddress": "^0.2.8",
     "machine-uuid": "^1.0.7",
     "moment": "^2.13.0",
-    "node-notifier": "^4.5.0",
     "nosqlite": "^0.2.2",
     "notification-shim": "^0.1.1",
     "progress": "^1.1.8",
