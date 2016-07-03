@@ -183,7 +183,7 @@ exports.decryptFolder = cb => {
       return
     }
 
-    electron.event.sender.send('progressData', {progress: '40', title: 'Decrypting', desc: '(2/4) Decrypting'})
+    electron.event.sender.send('progressData', {progress: '40', title: 'Decrypting', desc: '(2/4) Decrypting Zip'})
 
     // Create the cipher from the stored IV
     let cipher = exports.generateCiphers(fs.readFileSync(path.join(tmpDir, 'IV')))
