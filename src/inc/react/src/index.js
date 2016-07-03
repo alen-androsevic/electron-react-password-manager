@@ -236,12 +236,8 @@ const Main = React.createClass({
     var divStyle = {
       display: 'inline',
     }
-    var imgStyle = {
-      paddingBottom: '13px',
-    }
     return (
       <div>
-        <img src='../../img/logo.png' style={imgStyle} width='30px'/> <h1 style={divStyle}>{this.props.title}</h1>
         <LoadingBar />
         <AddPasswordButton /><EncryptButton encryptState={this.props.encryptState} />
         <TableCreate passwords={this.props.passwords} />

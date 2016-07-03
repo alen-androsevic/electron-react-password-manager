@@ -77,7 +77,7 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('encryptFolder', (event, data) => {
     crypto.encryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder Encryption', 'Folder encrypted!', {id: data})
+      exports.sendMsg(event, true, 'Folder Encrypted!', 'Your folder is now encrypted', {id: data})
     })
   })
 
@@ -85,7 +85,7 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('decryptFolder', (event, data) => {
     crypto.decryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder Encryption', 'Folder decrypted!', {id: data})
+      exports.sendMsg(event, true, 'Folder Decrypted!', 'Your folder is now decrypted', {id: data})
     })
   })
 
@@ -97,6 +97,21 @@ exports.init = (a, cb) => {
   // When frontend requests index data
   electron.ipcMain.on('indexRender', (event, data) => {
     event.sender.send('indexRender',  exports.getPasswords(cb), exports.getEncryptedState(cb), packageInfo.name)
+  })
+
+  // When frontend requests index data
+  electron.ipcMain.on('close', (event, data) => {
+    electron.app.quit()
+  })
+
+  // When frontend requests index data
+  electron.ipcMain.on('minimise', (event, data) => {
+    electron.mainWindow.minimize()
+  })
+
+  // When frontend requests packageInfo
+  electron.ipcMain.on('packageInfo', (event, data) => {
+    event.sender.send('packageInfo',  packageInfo)
   })
 
   // When a password (service) has been added

@@ -1,7 +1,7 @@
 'use strict'
 
 const path         = require('path')
-const {Tray, Menu} = require('electron')
+const {Tray, Menu, app} = require('electron')
 const packageInfo  = require('../package.json')
 
 let mainWindow
@@ -41,6 +41,8 @@ exports.createApp = () => {
     icon:             iconPath,
     acceptFirstMouse: true,
     autoHideMenuBar:  true,
+    frame:            false,
+    titleBarStyle:    'hidden'
   })
 
   // Create tray and context menu
@@ -74,6 +76,8 @@ exports.createApp = () => {
   mainWindow.on('closed', function() {
     mainWindow = null
   })
+
+  electron.mainWindow = mainWindow
 }
 
 // Loads local html pages

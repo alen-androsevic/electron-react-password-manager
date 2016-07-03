@@ -7,11 +7,14 @@ ipcRenderer.on('reply', function(event, msg) {
     title: msg.humane.title,
     text: msg.humane.msg,
     type: msg.humane.type,
-    imageUrl: '../../img/logo.png',
+    //imageUrl: '../../img/logo.png',
   }
 
   if (msg.humane.type == 'success') {
     obj.timer = 2000
+    obj.showConfirmButton = false
+  } else {
+    obj.confirmButtonText = 'Oops'
   }
 
   swal(obj)

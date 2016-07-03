@@ -44,15 +44,39 @@ body {
   border-top-right-radius: 0;
 }
 
-.dropdown{
+.dropdown {
   text-align:center;
 }
 
-.button, .dropdown-menu{
+.button, .dropdown-menu {
   margin:10px auto
 }
-.dropdown-menu{
+.dropdown-menu {
   width:200px;
   left:50%;
   margin-left:-100px;
+}
+
+# topkek
+.loadinggif {
+   background:
+     url('http://www.hsi.com.hk/HSI-Net/pages/images/en/share/ajax-loader.gif')
+     no-repeat
+     right center;
+}
+
+body {
+  padding-top:0px
+}
+
+button {
+  -webkit-app-region: no-drag;
+}
+
+.toolbar {
+  width: 100%;
+  height: 34px;
+  background-color: black;
+  color: white;
+  -webkit-app-region: drag;
 }
