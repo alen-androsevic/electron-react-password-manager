@@ -294,7 +294,6 @@ exports.decryptFolder = cb => {
         cb()
       })
     })
-
   })
 }
 
