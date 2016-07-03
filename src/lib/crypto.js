@@ -18,6 +18,7 @@ const os             = require('os')
 const socket         = require('./socket')
 const progress       = require('progress-stream')
 const getSize        = require('get-folder-size')
+const tmpDir         = path.join(os.tmpdir(), 'passwordapp')
 
 let electron
 
@@ -81,9 +82,8 @@ exports.generateHMAC = () => {
 
 // How we encrypt folders
 // TODO: Try to have one pipe for the whole operation, not sure if this is even possible
+// TODO: This function (and decryptFolder) is getting messy
 exports.encryptFolder = cb => {
-  electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(1/5) Starting Job'})
-  const tmpDir = path.join(os.tmpdir(), 'passwordapp')
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir)
   }
@@ -95,112 +95,118 @@ exports.encryptFolder = cb => {
           cb('error, already encrypted')
         } else {
           fs.unlink(path.join(tmpDir, 'IV'))
+          exports.encryptFolderProcess(cb)
         }
       })
+    } else {
+      exports.encryptFolderProcess(cb)
     }
-    getSize('./encryptedfolder', function(err, totalFolderSize) {
+  })
+}
+
+exports.encryptFolderProcess = cb => {
+  electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(1/5) Starting Job'})
+  getSize('./encryptedfolder', function(err, totalFolderSize) {
+    chkErr(err, cb)
+
+    // Snapshot the entire directory
+    glob('./encryptedfolder/**', {}, (err, files) => {
       chkErr(err, cb)
 
-      // Snapshot the entire directory
-      glob('./encryptedfolder/**', {}, (err, files) => {
+      electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(2/5) Generating Ciphers'})
+
+      // Create the cipher for the tar process this ensures the IV is randomized
+      let cipher = exports.generateCiphers()
+
+      // Tar options
+      const archive = archiver('tar')
+
+      // Bulk archive these files
+      archive.bulk([{
+          expand: true, cwd: './encryptedfolder', src: ['**/*'],
+        },
+      ])
+
+      archive.finalize()
+
+      // Create the initial un-encrypted write stream
+      const output = fs.createWriteStream(path.join(tmpDir, 'tar'))
+
+      archive.on('error', function(err) {
+        chkErr(err, cb)
+      })
+
+      // Write IV to file
+      fs.writeFile(path.join(tmpDir, 'IV'), cipher.IV, err => {
         chkErr(err, cb)
 
-        electron.event.sender.send('progressData', {progress: '10', title: 'Encrypting', desc: '(2/5) Generating Ciphers'})
+        electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(3/5) Zipping Files'})
 
-        // Create the cipher for the tar process this ensures the IV is randomized
-        let cipher = exports.generateCiphers()
+        // Init the progress magic
+        const str = progress({
+          length: totalFolderSize,
+          time: 100,
+        })
 
-        // Tar options
-        const archive = archiver('tar')
+        // Now we send the progress status back to our renderer via the progressData function
+        str.on('progress', function(progress) {
+          if (progress.percentage >= 99)
+            progress.percentage = 99
 
-        // Bulk archive these files
-        archive.bulk([{
-            expand: true, cwd: './encryptedfolder', src: ['**/*'],
-          },
-        ])
+          electron.event.sender.send('progressData', {
+            progress: progress.percentage,
+            title: 'Encrypting', desc: '(3/5) Zipping Files, ETA: ' + progress.eta + ' seconds',
+          })
+        })
 
-        archive.finalize()
+        // Begin streaming tar to output
+        const streamer = archive.pipe(str).pipe(output)
 
-        // Create the initial un-encrypted write stream
-        const output = fs.createWriteStream(path.join(tmpDir, 'tar'))
-
-        archive.on('error', function(err) {
+        streamer.on('error', function(err) {
           chkErr(err, cb)
         })
 
-        // Write IV to file
-        fs.writeFile(path.join(tmpDir, 'IV'), cipher.IV, err => {
-          chkErr(err, cb)
+        streamer.on('finish', function() {
+          electron.event.sender.send('progressData', {progress: '0', title: 'Encrypting', desc: '(4/5) Encrypting Zip'})
 
-          electron.event.sender.send('progressData', {progress: '30', title: 'Encrypting', desc: '(3/5) Zipping Files'})
+          // Encrypt on finished tarring
+          const input = fs.createReadStream(path.join(tmpDir, 'tar'))
+          const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
 
-          // Init the progress magic
+          // Do a file stat to check the file size of the encrypted file
+          const stat = fs.statSync(path.join(tmpDir, 'tar'))
           const str = progress({
-            length: totalFolderSize,
+            length: stat.size,
             time: 100,
           })
 
           // Now we send the progress status back to our renderer via the progressData function
           str.on('progress', function(progress) {
-            if (progress.percentage >= 99)
-              progress.percentage = 99
-
             electron.event.sender.send('progressData', {
               progress: progress.percentage,
-              title: 'Encrypting', desc: '(3/5) Zipping Files, ETA: ' + progress.eta + ' seconds',
+              title: 'Encrypting', desc: '(4/5) Encrypting Zip, ETA: ' + progress.eta + ' seconds',
             })
           })
 
-          // Begin streaming tar to output
-          const streamer = archive.pipe(str).pipe(output)
+          const encryptedstream = input.pipe(cipher.encrypt).pipe(str).pipe(encryptedoutput)
 
-          streamer.on('error', function(err) {
+          encryptedstream.on('error', function(err) {
             chkErr(err, cb)
           })
 
-          streamer.on('finish', function() {
-            electron.event.sender.send('progressData', {progress: '60', title: 'Encrypting', desc: '(4/5) Encrypting Zip'})
-
-            // Encrypt on finished tarring
-            const input = fs.createReadStream(path.join(tmpDir, 'tar'))
-            const encryptedoutput = fs.createWriteStream('./encryptedfolder/encrypted')
-
-            // Do a file stat to check the file size of the encrypted file
-            const stat = fs.statSync(path.join(tmpDir, 'tar'))
-            const str = progress({
-              length: stat.size,
-              time: 100,
-            })
-
-            // Now we send the progress status back to our renderer via the progressData function
-            str.on('progress', function(progress) {
-              electron.event.sender.send('progressData', {
-                progress: progress.percentage,
-                title: 'Encrypting', desc: '(4/5) Encrypting Zip, ETA: ' + progress.eta + ' seconds',
-              })
-            })
-
-            const encryptedstream = input.pipe(cipher.encrypt).pipe(str).pipe(encryptedoutput)
-
-            encryptedstream.on('error', function(err) {
-              chkErr(err, cb)
-            })
-
-            encryptedstream.on('finish', () => {
-              electron.event.sender.send('progressData', {progress: '100', title: 'Encrypting', desc: '(5/5) Cleaning Up'})
-              // Cleanup after encrypt
-              for (let i in files) {
-                if (files[i] !== './encryptedfolder') {
-                  rimraf(files[i], function(err) {
-                    chkErr(err, cb)
-                  })
-                }
+          encryptedstream.on('finish', () => {
+            electron.event.sender.send('progressData', {progress: '100', title: 'Encrypting', desc: '(5/5) Cleaning Up'})
+            // Cleanup after encrypt
+            for (let i in files) {
+              if (files[i] !== './encryptedfolder') {
+                rimraf(files[i], function(err) {
+                  chkErr(err, cb)
+                })
               }
+            }
 
-              fs.unlink(path.join(tmpDir, 'tar'))
-              cb()
-            })
-
+            fs.unlink(path.join(tmpDir, 'tar'))
+            cb()
           })
         })
       })
@@ -210,8 +216,6 @@ exports.encryptFolder = cb => {
 
 // How we decrypt folders
 exports.decryptFolder = cb => {
-  electron.event.sender.send('progressData', {progress: '0', title: 'Decrypting', desc: '(1/4) Starting Job'})
-  const tmpDir = path.join(os.tmpdir(), 'passwordapp')
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir)
   }
@@ -222,7 +226,7 @@ exports.decryptFolder = cb => {
       return
     }
 
-    electron.event.sender.send('progressData', {progress: '40', title: 'Decrypting', desc: '(2/4) Decrypting Zip'})
+    electron.event.sender.send('progressData', {progress: '0', title: 'Decrypting', desc: '(1/4) Decrypting Zip'})
 
     // Create the cipher from the stored IV
     let cipher = exports.generateCiphers(fs.readFileSync(path.join(tmpDir, 'IV')))
@@ -258,7 +262,7 @@ exports.decryptFolder = cb => {
     })
 
     stream.on('finish', () => {
-      electron.event.sender.send('progressData', {progress: '70', title: 'Decrypting', desc: '(3/4) Extracting Files'})
+      electron.event.sender.send('progressData', {progress: '0', title: 'Decrypting', desc: '(3/4) Extracting Files'})
 
       // Init the progress magic
       const stat = fs.statSync(path.join(tmpDir, 'decrypted'))

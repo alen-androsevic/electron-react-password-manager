@@ -157,10 +157,10 @@ const EncryptButton = React.createClass({
     return (
       <div style={divStyle}>
         <Button style={styleEncrypt} onClick={this.encrypt} type='submit'>
-          Encrypt Data
+          Encrypt Folder
         </Button>
         <Button style={styleDecrypt} onClick={this.decrypt} type='submit'>
-          Decrypt Data
+          Decrypt Folder
         </Button>
       </div>
     )
@@ -237,7 +237,7 @@ const Main = React.createClass({
       display: 'inline',
     }
     var imgStyle = {
-      'padding-bottom': '13px',
+      paddingBottom: '13px',
     }
     return (
       <div>
