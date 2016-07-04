@@ -59,3 +59,4 @@ https://github.com/michaeldegroot/electron-react-password-manager/issues
 ![](http://i.imgur.com/2TJMRMx.png)
 ![](http://i.imgur.com/m0BNBv4.png)
 ![](http://i.imgur.com/5cHCXIO.png)
+![](http://i.imgur.com/81aZUIA.gifv)
