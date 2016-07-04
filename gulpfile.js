@@ -5,9 +5,18 @@ const packageJson  = require('./src/package.json')
 const gulpElectron = require('gulp-electron')
 const rimraf       = require('rimraf')
 const path         = require('path')
+const winInstaller = require('electron-windows-installer')
 
-gulp.task('default', () => {
-  build(['win32-ia32', 'win32-x64', 'linux-ia32', 'linux-x64', 'darwin-x64'])
+gulp.task('default', cb => {
+  build(['win32-ia32', 'win32-x64', 'linux-ia32', 'linux-x64', 'darwin-x64'], cb)
+})
+
+gulp.task('installer', cb => {
+  winInstaller({
+    appDirectory: './build/v0.37.6/win32-ia32/',
+    outputDirectory: './build/v0.37.6/installer/',
+    arch: 'ia32',
+  }).then(cb).catch(cb)
 })
 
 gulp.task('win32', cb => {
@@ -46,13 +55,11 @@ const build = (platformsSet, cb) => {
           CFBundleIdentifier:  packageJson.name,
           CFBundleName:        packageJson.name,
           CFBundleVersion:     packageJson.version,
-          icon:                path.join(__dirname, 'src', 'inc', 'img', 'logo.png'),
         },
         win: {
           'version-string':  packageJson.version,
           'file-version':    packageJson.version,
           'product-version': packageJson.version,
-          icon:              path.join(__dirname, 'src', 'inc', 'img', 'logo.png'),
         },
       },
     })).pipe(gulp.dest(''))

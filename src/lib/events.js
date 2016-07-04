@@ -42,7 +42,7 @@ exports.createApp = () => {
     acceptFirstMouse: true,
     autoHideMenuBar:  true,
     frame:            false,
-    titleBarStyle:    'hidden'
+    titleBarStyle:    'hidden',
   })
 
   // Create tray and context menu
@@ -77,12 +77,14 @@ exports.createApp = () => {
     mainWindow = null
   })
 
+  electron.maximized = false
   electron.mainWindow = mainWindow
 }
 
 // Loads local html pages
 exports.loadPage = (page, waitTime) => {
-  if (typeof(waitTime) == 'undefined')
+  const condition = typeof (waitTime) == 'undefined'
+  if (condition)
     waitTime = 0
 
   waitTime = waitTime * 1000

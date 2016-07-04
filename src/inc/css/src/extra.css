@@ -2,6 +2,15 @@ body {
   padding-top: 40px;
   padding-bottom: 40px;
   background-color: #eee;
+  padding: 0;
+  margin: 0;
+  border: 2px solid black;
+  border-top: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .form-signin {
@@ -22,8 +31,6 @@ body {
 .form-signin .form-control {
   position: relative;
   height: auto;
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
   padding: 10px;
   font-size: 16px;
 }
@@ -51,32 +58,46 @@ body {
 .button, .dropdown-menu {
   margin:10px auto
 }
+
 .dropdown-menu {
   width:200px;
   left:50%;
   margin-left:-100px;
 }
 
-# topkek
-.loadinggif {
-   background:
-     url('http://www.hsi.com.hk/HSI-Net/pages/images/en/share/ajax-loader.gif')
-     no-repeat
-     right center;
+.btn:focus {
+  outline: none;
+  outline-style: none;
 }
 
-body {
-  padding-top:0px
+.btn:active:focus {
+  outline: none;
+  outline-style: none;
 }
 
-button {
-  -webkit-app-region: no-drag;
+html {
+  margin: 0;
+  padding: 0;
 }
 
-.toolbar {
-  width: 100%;
-  height: 34px;
-  background-color: black;
-  color: white;
-  -webkit-app-region: drag;
+.container {
+  padding-top: 5px;
+}
+
+.table-responsive {
+  padding-top: 15px;
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
 }

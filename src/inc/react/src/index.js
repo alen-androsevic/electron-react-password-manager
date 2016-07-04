@@ -95,7 +95,10 @@ const AddPasswordForm = React.createClass({
     e.preventDefault()
 
     if (this.state.service.length === 0 || this.state.email.length === 0 || this.state.password.length === 0) {
-      appNotify('Neither fields can be empty')
+      alerter({
+        title: 'Error',
+        text: 'All fields must be populated',
+      }, ['warning'])
       return
     }
 
@@ -108,15 +111,18 @@ const AddPasswordForm = React.createClass({
   },
 
   render: function() {
+    var phservice = 'Example: Steam, Google'
+    var phemail = 'Enter email/username'
+
     return (
       <form onSubmit={this.handleSubmit}>
         <FormGroup controlId='formControlsText'>
           <ControlLabel>Service</ControlLabel>
-          <FormControl onChange={this.handleServiceChange} value={this.state.service} type='text' placeholder='Example: Steam, Google' />
+          <FormControl onChange={this.handleServiceChange} value={this.state.service} type='text' placeholder={phservice} />
         </FormGroup>
         <FormGroup controlId='formControlsText'>
           <ControlLabel>Email address</ControlLabel>
-          <FormControl onChange={this.handleEmailChange} value={this.state.email} type='text' placeholder='Enter email/username' />
+          <FormControl onChange={this.handleEmailChange} value={this.state.email} type='text' placeholder={phemail} />
         </FormGroup>
         <FormGroup controlId='formControlsPassword'>
           <ControlLabel>Password</ControlLabel>
@@ -156,10 +162,10 @@ const EncryptButton = React.createClass({
 
     return (
       <div style={divStyle}>
-        <Button style={styleEncrypt} onClick={this.encrypt} type='submit'>
+        <Button bsStyle='success' style={styleEncrypt} onClick={this.encrypt} type='submit'>
           Encrypt Folder
         </Button>
-        <Button style={styleDecrypt} onClick={this.decrypt} type='submit'>
+        <Button bsStyle='warning' style={styleDecrypt} onClick={this.decrypt} type='submit'>
           Decrypt Folder
         </Button>
       </div>
@@ -189,6 +195,31 @@ const LoadingBar = React.createClass({
 
 })
 
+const LogoutButton = React.createClass({
+  render: function() {
+    var divStyle = {
+      display: 'inline',
+    }
+    return (
+      <div style={divStyle}>
+        <Button bsStyle='danger' className='pull-right' onClick={this.logout} type='submit'>
+          Logout
+        </Button>
+      </div>
+    )
+  },
+
+  logout() {
+    alerter({
+      title: 'Logging out',
+      text: 'Are you sure you want to logout?',
+      confirmButtonText: 'Logout',
+    }, ['warning', 'confirm', 'red'], function() {
+      ipcRenderer.send('logout')
+    })
+  },
+})
+
 // The add password button
 const AddPasswordButton = React.createClass({
   render: function() {
@@ -197,7 +228,7 @@ const AddPasswordButton = React.createClass({
     }
     return (
       <div style={divStyle}>
-        <Button onClick={this.open} type='submit'>
+        <Button bsStyle='success' onClick={this.open} type='submit'>
           Add Password
         </Button>
 
@@ -236,10 +267,11 @@ const Main = React.createClass({
     var divStyle = {
       display: 'inline',
     }
+
     return (
       <div>
         <LoadingBar />
-        <AddPasswordButton /><EncryptButton encryptState={this.props.encryptState} />
+        <AddPasswordButton /> <EncryptButton encryptState={this.props.encryptState} /> <LogoutButton />
         <TableCreate passwords={this.props.passwords} />
       </div>
     )

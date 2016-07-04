@@ -1,0 +1,16 @@
+@font-face {
+  font-family: "robotobold";
+	src: url('myfont-webfont.eot?#iefix') format('embedded-opentype'),
+  url('../../fonts/Roboto-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: "roboto";
+
+	src: url('myfont-webfont.eot?#iefix') format('embedded-opentype'),
+  url('../../fonts/Roboto-Regular.ttf') format('truetype');
+}
+
+body {
+  font-family: "roboto"
+}

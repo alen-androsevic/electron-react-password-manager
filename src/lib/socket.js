@@ -11,6 +11,8 @@ const fs          = require('fs')
 const path        = require('path')
 const os          = require('os')
 const packageInfo = require('../package.json')
+const request     = require('request')
+const http        = require('http')
 
 let electron
 let callbackError
@@ -57,7 +59,10 @@ exports.init = (a, cb) => {
     // Check if passwords are same if first time run
     if (electron.firstTime) {
       if (data.pass != data.pass2) {
-        exports.sendMsg(event, true, 'Error', 'Passwords are not the same!')
+        exports.sendMsg(event, true, [
+          'Error',
+          'Passwords are not the same!',
+        ])
         return
       }
       // Save encryption methods to database if run for first time
@@ -77,7 +82,10 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('encryptFolder', (event, data) => {
     crypto.encryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder Encrypted!', 'Your folder is now encrypted', {id: data})
+      exports.sendMsg(event, true, [
+        'Folder Encrypted!',
+        'Your folder is now encrypted',
+      ], {id: data})
     })
   })
 
@@ -85,7 +93,10 @@ exports.init = (a, cb) => {
   electron.ipcMain.on('decryptFolder', (event, data) => {
     crypto.decryptFolder((err) => {
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Folder Decrypted!', 'Your folder is now decrypted', {id: data})
+      exports.sendMsg(event, true, [
+        'Folder Decrypted!',
+        'Your folder is now decrypted',
+      ], {id: data})
     })
   })
 
@@ -99,19 +110,65 @@ exports.init = (a, cb) => {
     event.sender.send('indexRender',  exports.getPasswords(cb), exports.getEncryptedState(cb), packageInfo.name)
   })
 
-  // When frontend requests index data
+  // When frontend requests a logout
+  electron.ipcMain.on('logout', (event, data) => {
+    electron.app.relaunch()
+    electron.app.quit()
+  })
+
+  // When frontend requests window close
   electron.ipcMain.on('close', (event, data) => {
     electron.app.quit()
   })
 
-  // When frontend requests index data
+  // When frontend requests window minimise
   electron.ipcMain.on('minimise', (event, data) => {
     electron.mainWindow.minimize()
   })
 
+  // When frontend requests window maximize
+  electron.ipcMain.on('maximize', (event, data) => {
+    if (!electron.maximized) {
+      electron.maximized = true
+      electron.mainWindow.maximize()
+    } else {
+      electron.maximized = false
+      electron.mainWindow.unmaximize()
+    }
+
+  })
+
+  // When frontend requests the new version
+  electron.ipcMain.on('newversion', (event, data) => {
+    const {shell} = require('electron')
+    shell.openExternal('https://github.com/michaeldegroot/electron-react-password-manager/releases/tag/' + data)
+  })
+
   // When frontend requests packageInfo
   electron.ipcMain.on('packageInfo', (event, data) => {
-    event.sender.send('packageInfo',  packageInfo)
+    const url = 'https://raw.githubusercontent.com/michaeldegroot/electron-react-password-manager/master/src/package.json'
+    request(url, function(error, response, body) {
+      packageInfo.update = {
+        availible: false,
+      }
+      if (!error && response.statusCode == 200) {
+        if (packageInfo.version < JSON.parse(body).version) {
+          packageInfo.update = {
+            available: true,
+            newversion: JSON.parse(body).version,
+          }
+        }
+      } else {
+        let bodyTxt = 'Could not connect to githubusercontent.com to request the current version of ' + packageInfo.name
+        bodyTxt += '\n\n' + response.statusCode + ' (' + http.STATUS_CODES[response.statusCode] + ')'
+        exports.sendMsg(event, false, [
+          'No Connection!',
+          bodyTxt,
+        ])
+      }
+
+      event.sender.send('packageInfo',  packageInfo)
+    })
   })
 
   // When a password (service) has been added
@@ -139,7 +196,10 @@ exports.init = (a, cb) => {
     function(err, post) {
       electron.db.passwords.post(post, (err, data) => {
         chkErr(err, callbackError)
-        exports.sendMsg(event, true, 'Service Added!', 'Your service ' + originalPost.service + ' has been successfully added', {id: data})
+        exports.sendMsg(event, true, [
+          'Service Added!',
+          'Your service ' + originalPost.service + ' has been successfully added',
+        ], {id: data})
         event.sender.send('serviceAdd', originalPost)
         originalPost = null
       })
@@ -149,7 +209,10 @@ exports.init = (a, cb) => {
   // When a password (service) has been deleted
   electron.ipcMain.on('deleteService', (event, id) => {
     electron.db.passwords.delete(id)
-    exports.sendMsg(event, true, 'Service Removed!', 'Your service has been successfully removed', {removedid: id})
+    exports.sendMsg(event, true, [
+      'Service Removed!',
+      'Your service has been successfully removed',
+    ], {removedid: id})
   })
 }
 
@@ -232,6 +295,7 @@ exports.getEncryptedState = cb => {
       cb(e)
       return
     }
+
     return 0
   }
 
@@ -301,7 +365,10 @@ exports.loginContinue = (event, data) => {
 
     // Check if new account
     if (firstResult.length == 0) {
-      exports.sendMsg(event, true, 'Login', 'Account created, You are now logged in')
+      exports.sendMsg(event, true, [
+        'Login',
+        'Account created, You are now logged in',
+      ])
       events.loadPage('index', 1.5)
       return // Stop because no results
     }
@@ -310,30 +377,41 @@ exports.loginContinue = (event, data) => {
     firstResult = firstResult[0]
     crypto.decryptString(firstResult.password, (err, decrypted) => {
       if (err === 'HMAC TAMPER') {
-        exports.sendMsg(event, false, 'Corrupt Database', 'Your password database is corrupt')
+        exports.sendMsg(event, false, [
+          'Corrupt Database',
+          'Your password database is corrupt',
+        ])
         return
       }
 
       if (err === 'DECRYPT FAIL') {
-        exports.sendMsg(event, false, 'Wrong Password', 'Supplied credentials are invalid, please try again.')
+        exports.sendMsg(event, false, [
+          'Wrong Password',
+          'Supplied credentials are invalid, please try again.',
+        ])
         return
       }
 
       chkErr(err, callbackError)
-      exports.sendMsg(event, true, 'Login Successful', 'Welcome!')
+      exports.sendMsg(event, true, [
+        'Login Successful',
+        'Welcome!',
+      ])
       events.loadPage('index', 1.5)
     })
   })
 }
 
 // Desktop notifcations
-exports.sendMsg = (event, result, title, message, extra) => {
+exports.sendMsg = (event, result, msgData, extra) => {
+  const title = msgData[0]
+  const message = msgData[1]
   let type = 'error'
   if (result) {
     type = 'success'
   }
 
-  let msg = {
+  event.sender.send('reply', {
     result: result,
     humane: {
       title: title,
@@ -341,6 +419,5 @@ exports.sendMsg = (event, result, title, message, extra) => {
       type: type,
       extra: extra,
     },
-  }
-  event.sender.send('reply', msg)
+  })
 }

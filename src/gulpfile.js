@@ -136,6 +136,7 @@ const buildJs = cb => {
     .pipe(uglify().on('error', gulpUtil.log))
     .pipe(concat('main.js'))
     .pipe(ignore.exclude(['**/*.map']))
+    .pipe(ignore.exclude(['inc/js/src/!/**/*.js']))
     .pipe(gulp.dest('inc/js/build'))
     .pipe(rename('main.min.js'))
     .pipe(uglify())
