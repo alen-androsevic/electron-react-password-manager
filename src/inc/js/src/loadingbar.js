@@ -1,6 +1,8 @@
 'use strict'
 
 $(function() {
+  var variableTimeout
+
   // When main process sends progressData
   ipcRenderer.on('progressData', function(event, progressData) {
     if (progressData.progress == 100) {

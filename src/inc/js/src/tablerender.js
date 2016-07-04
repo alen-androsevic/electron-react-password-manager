@@ -23,6 +23,9 @@ $(function() {
       $('table td:nth-child(3)').on('mouseout', function() {
         $(this).html($(this).html().replace(/[^\s]/g, '*'))
       })
+
+      $('table').wrapAll('<div class="passwordtable"/>')
+      $('.passwordtable').css('height', $('body').height() - 140)
     }
   }, 1)
 })

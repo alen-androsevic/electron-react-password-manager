@@ -3,15 +3,13 @@
   "version": "0.2.4",
   "description": "A secure password storing application. Built with Electron and React",
   "main": "main.js",
-  "scripts": {
-    "start": "electron main.js",
-    "build": "./node_modules/.bin/webpack"
-  },
   "keywords": [
     "Electron",
     "React",
     "Password",
-    "Storage"
+    "Storage",
+    "Encryption",
+    "Decryption"
   ],
   "author": "michaeldegroot",
   "license": "MIT",
@@ -54,7 +52,6 @@
     "rimraf": "^2.5.2",
     "show-stream-progress": "^0.1.1",
     "stream-progressbar": "^1.0.1",
-    "tar-fs": "^1.13.0",
-    "update-notifier": "^1.0.2"
+    "tar-fs": "^1.13.0"
   }
 }

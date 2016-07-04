@@ -1,8 +1,5 @@
 'use strict'
 
-var variableTimeout
-var packageInfo
-
 $(function() {
   // Page effect
   $('body .container').fadeOut(0).fadeIn('slow')

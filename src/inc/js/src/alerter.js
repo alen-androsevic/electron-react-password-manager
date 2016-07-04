@@ -28,6 +28,9 @@ function alerter(overrideSettings, presets, cb) {
   if (!presets)
     presets = []
 
+  if (!audioOn)
+    presets.push('nosound')
+
   if (presets.indexOf('warning') >= 0) {
     defaultSettings.type = 'warning'
     defaultSettings.confirmButtonColor =  '#DD6B55'
@@ -42,7 +45,7 @@ function alerter(overrideSettings, presets, cb) {
 
   if (presets.indexOf('success') >= 0) {
     defaultSettings.type = 'success'
-    defaultSettings.timer = 2000
+    defaultSettings.timer = 1000
     defaultSettings.showConfirmButton = false
     defaultSettings.confirmButtonColor =  '#5dd55d'
     playAudio = new Audio('file:///' + __dirname + '/../../sounds/success.mp3')
